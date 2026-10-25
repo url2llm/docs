@@ -1,0 +1,42 @@
+---
+title: Scrape a page
+description: Choose outputs and keep screenshot options simple.
+---
+
+The draft `POST /v1/scrape` request requires a URL and at least one enabled format.
+
+```json
+{
+  "url": "https://example.com",
+  "formats": {
+    "markdown": true,
+    "screenshot": true
+  },
+  "screenshotParams": {
+    "fullPage": true
+  }
+}
+```
+
+Omit `screenshotParams` for a viewport screenshot. Screenshots are JPEG, with optional `fullPage` and `quality` settings. Quality defaults to 80. Custom viewport dimensions belong in `sharedParams.viewport`.
+
+For language or country preferences, add shared settings:
+
+```json
+{
+  "url": "https://example.com",
+  "formats": {"markdown": true},
+  "sharedParams": {
+    "languages": ["de-DE", "en-US"],
+    "country": "DE"
+  }
+}
+```
+
+Language and country are independent. A language preference does not require country routing. Country selection depends on supported network egress and does not change an explicit language tag.
+
+`maxAgeMs` defaults to `0` and `storeInCache` defaults to `false`. Requests with headers, actions, or profiles bypass document caching. Zero data retention is a separate capability.
+
+The deadline defaults to 30 seconds. Atomic completion is the default: all requested outputs must succeed. The proposed `return-partial` mode uses output errors and an explicit partial flag; its implementation and billing policy remain pending.
+
+Authenticate with `Authorization: Bearer YOUR_API_KEY` when this contract is implemented. Keep target-site headers in `sharedParams.headers`, separate from your url2llm API key.

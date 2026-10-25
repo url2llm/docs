@@ -1,55 +1,35 @@
-# Mintlify Starter Kit
+# url2llm docs
 
-Use the starter kit to get your docs deployed and ready to customize.
+Mintlify documentation for the agreed draft API contract. This repository owns public API schemas and guides. Backend architecture, implementation gaps and deployment notes stay in `../backend-core/docs/`.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+| File | Purpose |
+| --- | --- |
+| `docs.json` | Mintlify appearance and navigation |
+| `openapi.json` | Canonical draft request and response schemas |
+| `introduction.mdx` | Public introduction and draft status |
+| `guides/` | Task guides without duplicate parameter tables |
+| `images/` | Existing url2llm wordmarks |
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## Local preview
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+Use Node.js 22 or newer. The Mintlify CLI version is pinned in `package.json`.
 
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
+```sh
+npm ci
+npm run check
+npm run dev
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+Preview at `http://localhost:3002`. The API playground is disabled and no server URL is configured while the contract is a draft.
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+## Connect Mintlify
 
-## Development
+Create or select a Mintlify project, connect this Git repository, select its publishing branch, and use `/` as the documentation directory. Mintlify reads `docs.json` and generates the endpoint pages from `openapi.json`. Configure the final documentation domain in Mintlify after the repository is connected.
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+## Update the contract
 
-```
-npm i -g mint
-```
+Edit `openapi.json` directly, then run the checks. Its schemas are self-contained because Mintlify does not support external OpenAPI references. Do not maintain a second request-schema copy in the backend.
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+The draft groups output settings and keeps screenshot options limited to `fullPage` and `quality`. The response retains the existing url2llm envelope and adds draft output types and explicit partial-result fields. New response shapes, partial billing, profile state, private artifacts and unimplemented output producers must be reviewed before activation. Do not point these draft requests at the current production endpoint.
 
-```
-mint dev
-```
-
-View your local preview at `http://localhost:3000`.
-
-## Publishing changes
-
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
-
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+Official setup references: [OpenAPI](https://www.mintlify.com/docs/api-playground/openapi-setup), [configuration](https://www.mintlify.com/docs/organize/settings), and [CLI](https://www.mintlify.com/docs/cli/install).

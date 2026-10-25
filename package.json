@@ -1,0 +1,16 @@
+{
+  "name": "url2llm-docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mintlify documentation for the proposed url2llm API",
+  "scripts": {
+    "dev": "mint dev --no-open --port 3002 --telemetry false",
+    "check": "mint validate --telemetry false && mint broken-links --telemetry false"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "mint": "4.2.1125"
+  }
+}
