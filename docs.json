@@ -13,7 +13,7 @@
   },
   "favicon": "/favicon.ico",
   "banner": {
-    "content": "Draft API contract. These requests are not yet supported by the current backend.",
+    "content": "The API reference describes the implemented API. Draft pages describe proposed changes.",
     "dismissible": false
   },
   "navigation": {
@@ -25,6 +25,12 @@
             "group": "Get started",
             "pages": [
               "introduction",
+              "guides/current-scrape"
+            ]
+          },
+          {
+            "group": "Draft guides",
+            "pages": [
               "guides/scrape"
             ]
           }
@@ -32,6 +38,10 @@
       },
       {
         "tab": "API reference",
+        "openapi": "openapi-public.json"
+      },
+      {
+        "tab": "Draft API",
         "openapi": "openapi.json"
       }
     ]
