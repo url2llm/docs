@@ -1,0 +1,48 @@
+---
+title: Team access
+description: Invite teammates, assign roles, and remove organization access.
+---
+
+Team access belongs to an organization. Open [Settings > Members](https://url2llm.com/dashboard/settings/members) after selecting the organization you want to manage.
+
+## Roles and permissions
+
+| Action | Access required |
+| --- | --- |
+| Read API key metadata, usage, activity, and billing | Signed-in organization member |
+| Create, reveal, or revoke API keys | Organization owner or admin |
+| Run the dashboard Playground with a revealed key | Organization owner or admin |
+| Subscribe, buy credits, or change auto-recharge | Organization owner or admin |
+| Read the member list | Owner, admin, or a role with member-read permission |
+| Invite people, change roles, or remove members | Owner, admin, or a role with member-management permission |
+| Update the organization profile | Owner, admin, or a role with profile-management permission |
+
+The role choices shown in the dashboard are the roles available to your organization. A custom role's member or profile permissions do not replace the owner or admin role required to manage API keys and billing.
+
+All organization keys share one credit balance. Inviting a person does not give them a separate credit allowance or reveal key secrets to them.
+
+## Invite a teammate
+
+1. Open **Settings > Members** and choose **Invite member**.
+2. Enter the teammate's email address.
+3. Select an available role, then choose **Send invitation**.
+4. The teammate follows the email invitation and signs in or creates an account.
+5. After joining, they can select the organization in the dashboard switcher.
+
+An invitation is pending access, not an active membership. The **Invitations** section lists pending invitations and their roles. Choose **Revoke** to make a pending invitation unusable. To change its role or email, revoke it and send a new invitation.
+
+## Change a member's role
+
+Open the member's menu, choose a role, and confirm. Review the capabilities above before granting admin access, because admins can reveal organization secrets and change billing.
+
+The member menu cannot change your own role or remove your own membership. Ask another authorized teammate to manage your access. Available role changes remain subject to your organization's permissions.
+
+## Remove a member
+
+Choose **Remove member** in that member's menu and confirm. They lose dashboard access to that organization. Their personal account and access to other organizations are separate.
+
+Organization API keys remain active after a member is removed. If that person had a secret, [rotate or revoke the affected keys](/account/api-keys#rotate-a-key) as well. Removing a member does not undo requests already executed or erase historical usage.
+
+## Troubleshoot access
+
+If a teammate cannot find the organization, check whether they accepted the invitation with the intended account. If a member list or management action is unavailable, check the active organization and role. A role that can read usage may still be unable to reveal a key or run the Playground.

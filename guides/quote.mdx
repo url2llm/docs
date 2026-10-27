@@ -1,0 +1,36 @@
+---
+title: Quote and credits
+description: Check the credit cost before scraping and understand billing outcomes.
+---
+
+`POST /v1/quote` checks the credit price for a scrape without fetching the page or charging credits. Send the same body you would send to `/v1/scrape`. The endpoint requires an API key with the `scrape` scope.
+
+```bash
+curl https://api.url2llm.com/v1/quote \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com","formats":["markdown"]}'
+```
+
+The response's `data` contains `credits`, `free`, and `reason`. A supported scrape currently quotes one credit with `free: false` and `reason: "fresh_fetch"`. A quote does not reserve credits or guarantee that the source page will succeed.
+
+## Current credit rules
+
+| Outcome | Credits |
+| --- | ---: |
+| Billable scrape, including a repeated URL | 1 |
+| Billable map call | 1 |
+| Quote call | 0 |
+| Blocked source response (`401`, `403`, `429`), timeout, or `5xx` | 0 |
+
+A source page's `404` is a billable answer. Credits are reserved before a request and released when its outcome is unbilled. Browser rendering and currently available extra formats have no surcharge. Every scrape fetches fresh content; there is no free cached-repeat tier.
+
+All organization keys spend from the shared organization balance. The [dashboard](https://url2llm.com/dashboard) shows the current balance and usage; [Activity](https://url2llm.com/dashboard/activity) shows charges and released reservations for individual requests.
+
+## Plans and credit purchases
+
+See [Billing and plans](/account/billing) for monthly allowances, prepaid credits, subscriptions, and automatic recharge. Billing changes require an organization owner or admin.
+
+Use an `Idempotency-Key` on scrape and map requests you may retry. See [retries and idempotency](/guides/retries) to avoid duplicate work and charges.
+
+A successful quote does not create a reservation or a price lock. Another key can spend the balance before your scrape runs. An insufficient available balance returns `402`; inspect [Billing](/account/billing#available-and-reserved-credits) before retrying.

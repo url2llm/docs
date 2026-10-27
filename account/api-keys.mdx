@@ -1,0 +1,76 @@
+---
+title: API keys
+description: Create, reveal, rotate, and revoke organization API keys.
+---
+
+API keys authenticate [scrape](/features/scrape), [map](/features/map), and [quote](/guides/quote) requests. Each key belongs to one organization. Requests are attributed to that key and spend from the organization's shared credit balance.
+
+Open [Dashboard > API keys](https://url2llm.com/dashboard/keys). Organization owners and admins can create, reveal, and revoke keys. Other members can read key metadata and usage without seeing the secret.
+
+## Create a key
+
+1. Select the organization that will own the key.
+2. Click **Create API key** and enter a name, such as `production-ingestion`.
+3. Leave **Live key** on for a `u2l_live_` key, or turn it off for a `u2l_test_` key.
+4. Create the key, copy its secret, and store it in your application's secret manager.
+
+Dashboard-created keys receive both supported scopes. A test prefix helps distinguish environments; it does not create a separate balance, free requests, or a billing sandbox. Test and live keys use the same organization credits and limits.
+
+## Choose scopes
+
+| Scope | Allowed product endpoints |
+| --- | --- |
+| `scrape` | `POST /v1/scrape` and `POST /v1/quote` |
+| `map` | `POST /v1/map` |
+
+For a narrower key, an organization admin can create it through the session-authenticated account API:
+
+```http
+POST /v1/keys
+Authorization: Bearer YOUR_ORGANIZATION_SESSION_TOKEN
+Content-Type: application/json
+
+{
+  "name": "content-reader",
+  "scopes": ["scrape"],
+  "live": true
+}
+```
+
+The creation response returns the secret in `data.key`. A product API key cannot authenticate key-management requests. See [authentication](/getting-started/authentication) for the distinction between keys and user sessions.
+
+## Reveal an existing key
+
+Key lists display a prefix, not the full secret. An organization admin can reveal an active key when it is marked revealable, then copy it. Keys without a recoverable secret must be replaced. Revoked keys cannot be revealed.
+
+The administrative reveal endpoint is `POST /v1/keys/{key_id}/reveal`, authenticated with an organization-scoped user session. Its response contains `data.key`. Keep revealed secrets out of logs and shared screenshots.
+
+## Inspect usage
+
+The page opens on **Active** keys. Use the status filters to include revoked keys and choose the 7, 30, or 90 day usage period. Each row shows requests, credits used, creation time, and last use. Key names are labels; the prefix is useful for identifying a credential without exposing it.
+
+Revoked keys remain in historical usage. See [usage and activity](/account/usage) to reconcile key totals with the organization balance.
+
+## Rotate a key
+
+1. Create a replacement key with the required scopes.
+2. Update the secret in every service that uses the old key.
+3. Verify a request succeeds with the replacement.
+4. Revoke the old key and confirm its services are using the replacement.
+
+Scopes are chosen at creation. To change them, create a replacement key. Separate credentials for separate services make rotation and incident response easier.
+
+## Revoke a key
+
+Choose **Revoke** on an active key and confirm. Revocation stops future authentication and reveal while preserving its usage history. It does not delete the organization, return previously spent credits, or sign teammates out. You can revoke the last active key; a new active key is then needed for product calls and the Playground.
+
+The session-authenticated administrative endpoint is:
+
+```http
+DELETE /v1/keys/KEY_ID
+Authorization: Bearer YOUR_ORGANIZATION_SESSION_TOKEN
+```
+
+Use the key's ID from the list, not its secret or display prefix. Revocation cannot be undone through the current dashboard; create a replacement when access is needed again.
+
+Creation and revocation share an organization limit of 10 calls per hour. Reveal is limited to 60 calls per user per minute. See [errors and limits](/guides/errors).

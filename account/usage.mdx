@@ -1,0 +1,50 @@
+---
+title: Usage and activity
+description: Track organization requests, key usage, charges, and released credits.
+---
+
+Use [Overview](https://url2llm.com/dashboard) for totals and [Activity](https://url2llm.com/dashboard/activity) for individual scrape and map requests. Both are scoped to the active organization.
+
+## Read the overview
+
+Choose a 7, 30, or 90 day period to inspect requests, credits used, and errors. Daily usage is grouped in UTC. The per-key breakdown includes revoked keys and historical requests without a recorded key, so its totals match the organization totals for the selected period.
+
+The credit balance is the current available balance; it is not a historical balance at the end of the selected range. The chart's credits are charges within that range. See [Billing](/account/billing) for the allowance period, purchased balance, and credits reserved for work in progress.
+
+## Inspect activity
+
+| Activity value | Meaning |
+| --- | --- |
+| URL and endpoint | The target page and the operation performed |
+| Pending | The request has not yet settled |
+| Failed | Execution ended without a usable source status; the API represents this as status `0` |
+| Status code | The recorded source or execution outcome |
+| Charged | Credits settled for this request |
+| Reserved | Credits still held for work in progress |
+| Released | A reservation returned without a charge |
+| Failure reason | A readable explanation when a request failed |
+
+A request can count as an error and still be billable. For example, a returned source `404` costs one credit, while blocks, timeouts, and server errors release the reservation. An error total is therefore not a count of refunded requests.
+
+Requests rejected before execution, such as an invalid key or invalid body, may not create an activity event. Quote calls do not execute a scrape and do not create billable activity.
+
+## Read usage through the account API
+
+Use an organization-scoped user session for `GET /v1/usage` and `GET /v1/usage/activity`. Product API keys do not authenticate account endpoints.
+
+For a summary, request `GET /v1/usage?days=30`. The response's `data` includes `days`, `by_key`, `total_requests`, `total_credits`, `total_errors`, and `credits_balance`.
+
+For activity, request `GET /v1/usage/activity?limit=50`. The response's `data` includes `events` and `next_cursor`. Pass that cursor to the next request until it is `null`:
+
+```http
+GET /v1/usage/activity?limit=50&cursor=CURSOR_FROM_PREVIOUS_RESPONSE
+Authorization: Bearer YOUR_ORGANIZATION_SESSION_TOKEN
+```
+
+Treat the cursor as opaque and URL-encode it when constructing the request. The dashboard loads additional pages as you scroll. No cursor means the first page, ordered newest first.
+
+## Investigate an unexpected charge
+
+Check the active organization, key, URL, endpoint, and activity outcome. A repeated URL is a fresh billable fetch unless the same accepted request is being replayed through [idempotency](/guides/retries). Revoking a key does not remove its past charges.
+
+Keep the API response's top-level `request_id` when contacting [support](mailto:support@url2llm.com). Include the request time and organization ID, but never the API key secret.

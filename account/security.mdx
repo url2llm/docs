@@ -1,0 +1,40 @@
+---
+title: Profile and account security
+description: Manage your profile, sign-in methods, and active devices.
+---
+
+Personal account settings apply to you across organizations. Organization roles, API keys, and billing are managed separately through [team access](/account/team-access), [API keys](/account/api-keys), and [Billing](/account/billing).
+
+## Update your profile
+
+Open [Settings > Profile](https://url2llm.com/dashboard/settings) and choose **Update profile** to change your name or photo.
+
+In **Email addresses**, add an address and verify it using the emailed code. A verified address can be made primary. To remove the current primary address, first choose another primary address. Addresses linked to a sign-in account may need that connection managed separately.
+
+## Manage connected accounts
+
+When connected sign-in accounts are present, the profile page lists them. Use **Disconnect** to remove an account only after you have another usable sign-in method. The dashboard prevents disconnecting your only supported method.
+
+Disconnecting a sign-in account does not revoke organization API keys.
+
+## Set or change a password
+
+Open [Settings > Security](https://url2llm.com/dashboard/settings/security). Choose **Set password** or **Change password**, enter the requested fields, and save. Changing an existing password requires the current password.
+
+The editor enables **Sign out other devices after changing your password** by default. Keep it enabled when changing a password because of suspected account access.
+
+## Review active devices
+
+The Security page lists active sessions with device, browser, and last-active information. Your current session is marked **This device**. Choose **Sign out** on another device and confirm to revoke that session.
+
+Signing a device out removes its account session. It does not invalidate API key secrets stored in applications; revoke those separately when needed.
+
+## Second factors and passkeys
+
+If the account exposes the two-factor section, it can show an enrolled authenticator or SMS second factor. The authenticator controls support verification, disabling the authenticator, and generating backup codes. Save new backup codes securely; generating replacements invalidates the previous codes.
+
+When the Passkeys section is available, you can add or remove passkeys. The account and sign-in configuration determine which security sections appear. Do not assume an absent section can be enabled from this dashboard.
+
+## Handle a leaked credential
+
+For an API key leak, revoke or rotate the affected key. For personal account access, change the password and sign out unfamiliar devices. If a teammate is leaving, remove their membership and rotate any organization keys they knew. These actions control different forms of access.

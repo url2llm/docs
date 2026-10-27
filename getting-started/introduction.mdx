@@ -1,0 +1,83 @@
+---
+title: Introduction
+description: Scrape public pages, discover site URLs, and extract page branding.
+---
+
+url2llm turns public URLs into content your application can use. Read a page as Markdown or HTML, capture its appearance, collect links and media, or inspect the visual identity visible on the page.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/getting-started/quickstart">
+    Get an API key, send a request, and check the response.
+  </Card>
+  <Card title="Try the Playground" icon="play" href="https://url2llm.com/dashboard/playground/scrape">
+    Inspect a public page in the dashboard before writing an integration.
+  </Card>
+</CardGroup>
+
+## Make a request
+
+Get an [organization API key](/account/api-keys) and set `URL2LLM_API_KEY` as described in the quickstart. This request returns the main page content as Markdown:
+
+```bash
+curl https://api.url2llm.com/v1/scrape \
+  -H "Authorization: Bearer $URL2LLM_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com","formats":{"markdown":true},"onlyMainContent":true}'
+```
+
+Read `data.markdown` after checking the response's `success` flag. `data.metadata` preserves the source URL, final URL, source status, and credits used. The [quickstart](/getting-started/quickstart) includes cURL, Node.js, and Python examples.
+
+## Choose an operation
+
+| You have | You want | Use |
+| --- | --- | --- |
+| A public URL | Page content and selected outputs | [Scrape API](/features/scrape) |
+| A starting URL or site | A list of candidate page URLs | [Map API](/features/map) |
+| A planned scrape request | Its credit cost before execution | [Quote API](/guides/quote) |
+| A public page | Its visible logos, colors, fonts, and component styles | [Branding output](/features/branding) from a scrape |
+
+A scrape reads one page synchronously. Map discovers URLs without scraping each one. Your application selects pages and owns multi-page scheduling, indexing, storage, and refreshes.
+
+## Choose a page output
+
+<CardGroup cols={2}>
+  <Card title="Markdown and HTML" icon="file-lines" href="/features/markdown-html">
+    Extract readable text or preserve markup for your workflow.
+  </Card>
+  <Card title="Screenshots" icon="image" href="/features/screenshots">
+    Capture the viewport or full page as an inline image or public URL.
+  </Card>
+  <Card title="Links and assets" icon="link" href="/features/links-assets">
+    Inspect page anchors and referenced images or videos.
+  </Card>
+  <Card title="Branding" icon="palette" href="/features/branding">
+    Read the visual identity expressed by a rendered page.
+  </Card>
+</CardGroup>
+
+JavaScript rendering is enabled by default. Multiple supported formats can share one page fetch, and currently add no format or browser credit surcharge. Each ordinary scrape fetches fresh content. Use [browser rendering](/guides/browser-rendering) for mobile, location, headers, and timing options.
+
+## Account and operations
+
+Signup provisions your first organization automatically. Every key in the organization shares its credit balance; personal sign-in and team roles control dashboard access separately.
+
+<CardGroup cols={2}>
+  <Card title="API keys" icon="key" href="/account/api-keys">
+    Create credentials, choose scopes, reveal secrets, rotate, and revoke keys.
+  </Card>
+  <Card title="Team access" icon="users" href="/account/team-access">
+    Invite teammates, assign roles, and remove organization access.
+  </Card>
+  <Card title="Billing and plans" icon="credit-card" href="/account/billing">
+    Manage monthly allowances, prepaid credits, and auto-recharge.
+  </Card>
+  <Card title="Usage and activity" icon="chart-line" href="/account/usage">
+    Inspect requests, key usage, charges, and released reservations.
+  </Card>
+</CardGroup>
+
+## Before production
+
+Read [authentication](/getting-started/authentication), [retries and idempotency](/guides/retries), and [errors and limits](/guides/errors). Check a representative page's output before scaling, keep its source metadata, and use a separate key for each service.
+
+The API reference is generated from the implemented [OpenAPI contract](/openapi-public.json). The separate Draft API and [draft scrape guide](/drafts/scrape) describe proposed controls. Use the implemented guides for requests to the current API.

@@ -1,0 +1,169 @@
+---
+title: Quickstart
+description: Get an API key, scrape a page, and inspect the result with cURL, Node.js, or Python.
+---
+
+Make your first url2llm request with cURL or a direct HTTP call from Node.js or Python. Start with one public page, then choose the outputs your application needs.
+
+## 1. Get an API key
+
+[Create an account](https://url2llm.com/sign-up), then open [Dashboard > API keys](https://url2llm.com/dashboard/keys). Signup automatically provisions your first organization.
+
+As an organization owner or admin, reveal an eligible active key or choose **Create API key**, give it a name, and copy the new secret. Dashboard-created keys have both `scrape` and `map` scopes. Set the key in the shell where you run the example:
+
+```bash
+export URL2LLM_API_KEY='YOUR_API_KEY'
+```
+
+Keep the secret in server-side configuration. [API keys](/account/api-keys) covers narrower scopes, live and test prefixes, reveal, rotation, and revocation.
+
+## 2. Choose your client
+
+cURL needs no additional package. The Node.js example uses built-in `fetch`; the Python example uses the standard library. No url2llm SDK installation is required for these examples.
+
+| Client | Save as | Run |
+| --- | --- | --- |
+| cURL | No file needed | Paste the command into your terminal |
+| Node.js 18 or newer | `example.mjs` | `node example.mjs` |
+| Python 3 | `example.py` | `python3 example.py` |
+
+Run the saved example from the same shell where you set `URL2LLM_API_KEY`.
+
+## 3. Send a scrape
+
+This request fetches `example.com` and asks for Markdown and links. JavaScript rendering and main-content extraction are enabled by default.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.url2llm.com/v1/scrape \
+  -H "Authorization: Bearer $URL2LLM_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com","formats":["markdown","links"]}'
+```
+
+```javascript Node.js
+const apiKey = process.env.URL2LLM_API_KEY
+if (!apiKey) throw new Error('Set URL2LLM_API_KEY before running this example')
+
+const response = await fetch('https://api.url2llm.com/v1/scrape', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    url: 'https://example.com',
+    formats: ['markdown', 'links'],
+  }),
+})
+const result = await response.json()
+if (!response.ok || !result.success) {
+  throw new Error(`${response.status}: ${result.error?.message ?? 'Scrape failed'}`)
+}
+console.log(result.data.markdown)
+console.log(result.data.metadata)
+```
+
+```python Python
+import json
+import os
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
+request = Request(
+    'https://api.url2llm.com/v1/scrape',
+    data=json.dumps({
+        'url': 'https://example.com',
+        'formats': ['markdown', 'links'],
+    }).encode(),
+    headers={
+        'Authorization': f'Bearer {os.environ["URL2LLM_API_KEY"]}',
+        'Content-Type': 'application/json',
+    },
+    method='POST',
+)
+try:
+    with urlopen(request, timeout=45) as response:
+        result = json.load(response)
+except HTTPError as error:
+    result = json.load(error)
+    raise RuntimeError(f'{error.code}: {result.get("error", {}).get("message", "Scrape failed")}') from error
+
+if not result.get('success'):
+    raise RuntimeError(result.get('error', {}).get('message', 'Scrape failed'))
+print(result['data']['markdown'])
+print(result['data']['metadata'])
+```
+
+</CodeGroup>
+
+## 4. Check the result
+
+cURL prints the complete JSON response; the Node.js and Python examples print its Markdown and metadata. A successful response contains `success: true` and the page under `data`. This is an illustrative excerpt:
+
+```json
+{
+  "success": true,
+  "data": {
+    "metadata": {
+      "source_url": "https://example.com/",
+      "final_url": "https://example.com/",
+      "status_code": 200,
+      "credits_used": 1
+    },
+    "markdown": "# Example Domain",
+    "links": [],
+    "screenshot": null
+  },
+  "request_id": "..."
+}
+```
+
+Check the API's HTTP status and `success` before reading `data`. Then inspect `metadata.status_code` and a known heading or paragraph. The source status is separate from the API's HTTP status. A source `404` can return a page result and is billable.
+
+Requested outputs appear in `data`; outputs you did not request are `null`. Page text and links depend on the source. There is no per-output success envelope or partial-result mode in the current API.
+
+Each ordinary scrape fetches fresh content and a billable request costs one credit. Supported extra formats have no current surcharge. Keep the top-level `request_id` for diagnosis and the source metadata beside content you store.
+
+## Try another operation
+
+| Task | Request | Guide |
+| --- | --- | --- |
+| Check scrape cost | `POST /v1/quote` with the same scrape body | [Quote and credits](/guides/quote) |
+| Discover site URLs | `POST /v1/map` with `url` and a desired `limit` | [Map API](/features/map) |
+| Capture a page image | Enable `screenshot` in the scrape formats | [Screenshots](/features/screenshots) |
+| Extract visual identity | Enable `branding` in the scrape formats | [Branding](/features/branding) |
+| Return HTML or media references | Select the relevant scrape formats | [Formats](/features/formats) |
+
+Map requires the `map` key scope. Scrape, branding, screenshots, and quote use `scrape`. Map returns candidates; select the URLs you need and scrape each one. It does not launch a managed crawl job.
+
+## If the request fails
+
+| Status | Next step |
+| --- | --- |
+| `401` | Check that the key is set, valid, and not revoked |
+| `403` | Check the required key scope or organization permission |
+| `402` | Check the shared available credit balance in Billing |
+| `400` or `422` | Read the error code and correct the request |
+| `429` | Reduce request volume and retry with bounded backoff |
+| `503` or `504` | Inspect the transient failure or timeout and use a bounded retry policy |
+
+For production retries, generate an `Idempotency-Key` once per distinct operation and reuse it with identical inputs. See [retries and idempotency](/guides/retries) before retrying a billable request whose result you did not receive.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Scrape options" icon="file-lines" href="/features/scrape">
+    Choose outputs, rendering, screenshots, and response handling.
+  </Card>
+  <Card title="API keys" icon="key" href="/account/api-keys">
+    Rotate or revoke keys and inspect usage by service.
+  </Card>
+  <Card title="Team access" icon="users" href="/account/team-access">
+    Invite teammates and choose their organization roles.
+  </Card>
+  <Card title="Billing and usage" icon="credit-card" href="/account/billing">
+    Manage shared credits and inspect individual charges.
+  </Card>
+</CardGroup>

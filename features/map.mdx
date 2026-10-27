@@ -1,0 +1,57 @@
+---
+title: "Map API"
+description: "Discover page URLs with POST /v1/map."
+---
+
+`POST /v1/map` discovers URLs from a site's sitemaps and page links, and can include previously discovered URLs. It does not scrape every discovered page. The endpoint requires a key with the `map` scope.
+
+```bash
+curl https://api.url2llm.com/v1/map \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com","limit":100}'
+```
+
+## Choose a discovery scope
+
+Start at the path you want to explore. Path filtering is enabled by default, so a request for `https://example.com/docs` keeps that path and its descendants. Include subdomains only when your application needs them.
+
+```json
+{
+  "url": "https://example.com/docs",
+  "limit": 100,
+  "includeSubdomains": false,
+  "ignoreQueryParameters": true,
+  "filterByPath": true,
+  "sitemap": "include",
+  "timeout": 30000
+}
+```
+
+Use `sitemap: "only"` for sitemap discovery without page rendering, or `sitemap: "skip"` for page links without sitemaps. `ignoreSitemap: true` is a compatibility alias for skipping sitemaps. Request fields accept camelCase and snake_case. See the API reference for the complete request schema and limits.
+
+## Filter a page list
+
+`search` keeps discovered URLs containing the supplied substring. It does not run a web search. For example, use `search: "product"` to narrow candidates for a product ingestion job. Query-parameter deduplication merges URL variants when enabled. Set `filterByPath: false` when you want to discover URLs beyond the starting path.
+
+Do not combine `ignoreSitemap: true` with `sitemap: "only"`; those settings ask for incompatible discovery behavior.
+
+## Results and limits
+
+The response contains `data.links`, an array of objects with `url`, optional `source`, and optional `title`. `source` identifies where the URL was found, such as a sitemap, page link, or known URL marked `index`. Known URLs can describe pages that have changed or disappeared; verify them when you scrape.
+
+Page discovery follows redirects and uses browser fallback when needed. Sitemap discovery reads robots declarations, nested XML indexes, and compressed sitemap files. Each sitemap fetch has a five-second attempt budget within the overall timeout.
+
+Search filters discovered URLs; it does not query a search engine. A timeout, failed source, traversal cap, or response-size cap produces `data.warning` when usable results remain. An empty timeout returns HTTP 504; an unavailable source that prevents discovery returns HTTP 503. Both refund the credit reservation.
+
+Discovery follows at most 128 child sitemap requests and scans at most 250000 sitemap locations per call. URL strings in the result have an 8 MiB total budget, and titles have a 512-character limit.
+
+Map is synchronous and billed per call, regardless of the number of URLs returned. Read [quote and credits](/guides/quote) for the current price, then use [Scrape API](/features/scrape) on selected URLs.
+
+## Retries
+
+Use an `Idempotency-Key` for each distinct map request and keep it when retrying identical inputs. A retry replays the saved response when available; otherwise it returns `409` without running discovery again. See [retries and idempotency](/guides/retries).
+
+## Fetch selected pages
+
+A map result is a candidate list. Apply your host, path, and content rules before sending one scrape per selected URL. Your application controls concurrency, retries, indexing, and refreshes. Mapping a site does not launch a managed crawl job or scrape every discovered page.

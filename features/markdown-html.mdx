@@ -1,0 +1,52 @@
+---
+title: Markdown and HTML
+description: Extract readable text or preserve document markup for your application.
+---
+
+Request Markdown for reading and retrieval, cleaned HTML for document structure, or raw HTML when you need the fetched markup. Several outputs can be produced from one [scrape](/features/scrape).
+
+```json
+{
+  "url": "https://example.com",
+  "formats": ["markdown", "html", "rawHtml"],
+  "onlyMainContent": true
+}
+```
+
+## Choose an output
+
+| Output | Use it for |
+| --- | --- |
+| `data.markdown` | Reading, indexing, and model context with headings, lists, and links |
+| `data.html` | Cleaned markup when tags or table structure matter |
+| `data.raw_html` | The fetched document before content filtering and cleaning |
+
+`rawHtml` is the request format name; `raw_html` is the response field. Outputs you did not request are `null`.
+
+When JavaScript rendering is enabled, raw HTML comes from the fetched rendered document. It is not a byte-for-byte HTTP response body, a browser session, or a downloadable archive of every asset.
+
+## Focus on useful content
+
+`onlyMainContent` is enabled by default. For page-wide cleaned HTML, set it to `false`. Use inclusion or exclusion selectors to narrow the document used by content outputs:
+
+```json
+{
+  "url": "https://example.com/docs",
+  "formats": ["markdown", "html"],
+  "includeTags": ["article"]
+}
+```
+
+Alternatively, use `excludeTags` to remove navigation or repeated page furniture. Do not combine inclusion and exclusion in one request. Raw HTML remains the fetched document, and metadata is extracted from the original page.
+
+If no inclusion selector matches, the current implementation falls back to the full document. Inspect the result rather than treating a selector as a guarantee that only one section was returned.
+
+## Build a retrieval record
+
+Keep `metadata.source_url`, `metadata.final_url`, the title when present, and your own fetch timestamp alongside the text. Chunk at useful heading boundaries and refresh on a schedule appropriate to the source.
+
+[Map](/features/map) discovers candidate URLs; each scrape reads one selected page. Your application owns selection, chunking, storage, refreshes, and removal of outdated content. Structured JSON extraction and summaries are not currently available.
+
+## Check completeness
+
+Compare one known heading or paragraph with the source page. If content appears only after JavaScript runs, use [browser rendering](/guides/browser-rendering). If a value depends on visual layout, request a [screenshot](/features/screenshots) alongside the text.

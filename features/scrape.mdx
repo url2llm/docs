@@ -1,0 +1,66 @@
+---
+title: Scrape API
+description: Fetch one public page with POST /v1/scrape.
+---
+
+`POST /v1/scrape` fetches one public page and returns the formats you request. The endpoint requires a key with the `scrape` scope. See [API keys](/account/api-keys) to create or rotate one.
+
+```bash
+curl https://api.url2llm.com/v1/scrape \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com","formats":["markdown","html","links"]}'
+```
+
+## Request a page
+
+Provide a public URL and choose the [formats](/features/formats) your application needs. If you omit `formats`, the API returns Markdown. Both a format array and an object of enabled formats are supported.
+
+```json
+{
+  "url": "https://example.com",
+  "formats": { "markdown": true, "links": true },
+  "onlyMainContent": true,
+  "renderJs": true,
+  "timeout": 30000
+}
+```
+
+Request fields accept camelCase and snake_case. See the API reference for all parameters, generated from the implemented [OpenAPI contract](/openapi-public.json).
+
+Configure [content outputs](/features/markdown-html) and [browser settings](/guides/browser-rendering) to match your source.
+
+Each ordinary call performs a fresh fetch. Cache controls such as `maxAge`, `minAge`, and `storeInCache` are not accepted by the current API. See [quote and credits](/guides/quote) for billing behavior.
+
+## Response
+
+The response wraps the result in `data` and includes a top-level `request_id`. `data.metadata` reports `source_url`, `final_url`, `status_code`, and `credits_used`. It can also report the page title, description, author, language, publication date, and capture identifiers.
+
+Requested outputs are returned in `data`; outputs you did not request are `null`. `html` is cleaned content, and `raw_html` contains the fetched HTML. A successful scrape produces every requested output.
+
+## Screenshot options
+
+```json
+{
+  "url": "https://example.com",
+  "formats": { "screenshot": true },
+  "screenshotParams": {
+    "fullPage": false,
+    "format": "webp",
+    "quality": 80,
+    "delivery": "base64"
+  }
+}
+```
+
+By default, screenshots are viewport captures encoded as JPEG with quality 80 and returned as inline data URLs. Set `fullPage: true`, or use `screenshot@fullPage` in a format array, to capture the full page. Do not combine `screenshot@fullPage` with an explicit `fullPage: false`.
+
+For PNG, omit `quality`. For a public image link, set `delivery: "url"`. URL delivery waits for image storage, while base64 delivery does not. Public image URLs have no signature expiry and remain usable while the file is stored. Anyone with the URL can access the image. Read the [screenshot guide](/features/screenshots) for encoding, capture restrictions, and delivery tradeoffs.
+
+## Retries
+
+Send an `Idempotency-Key` header to avoid repeating work or charges when retrying the same scrape or map request. Reuse the key with identical inputs. A retry replays the saved response when available; otherwise it returns `409` with code `IDEMPOTENCY_KEY_ALREADY_ACCEPTED`, without executing again.
+
+Saved responses may be delayed or unavailable. That conflict does not mean the original request failed. Reusing a key with different inputs returns `422` with code `IDEMPOTENCY_KEY_CONFLICT`. Use a new key only for an intentional new request. See [retries and idempotency](/guides/retries) for a complete retry policy.
+
+Credits are reserved before execution and charged when completed. Blocks, timeouts, and server errors release the reservation. A returned 404 page is billable. [Activity](https://url2llm.com/dashboard/activity) shows the failure reason, credits charged, and credits released.

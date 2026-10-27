@@ -485,13 +485,34 @@
             "default": false
           },
           "quality": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 1,
             "maximum": 100,
-            "default": 80
+            "default": null,
+            "description": "JPEG/WebP quality; defaults to 80. Omit for PNG."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "default": "jpeg"
+          },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "base64",
+              "url"
+            ],
+            "default": "base64"
           }
         },
-        "description": "JPEG screenshot. Viewport by default; fullPage captures the full page. Viewport dimensions belong in sharedParams.viewport."
+        "description": "Viewport or full-page screenshot. Base64 delivery returns an image data URL without waiting for storage. URL delivery uploads first and returns a public URL on the image domain. Viewport dimensions belong in sharedParams.viewport."
       },
       "ScrapeImageParams": {
         "type": "object",

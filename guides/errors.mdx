@@ -1,0 +1,60 @@
+---
+title: "Errors and limits"
+description: "Handle API errors and rate limits."
+---
+
+Errors use a consistent JSON envelope. Check the HTTP status and `error.code`; keep `request_id` when contacting support.
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "AUTHENTICATION_ERROR",
+    "message": "Authentication required",
+    "details": null
+  },
+  "request_id": "..."
+}
+```
+
+Use the returned `error.code` and message from the actual response.
+
+## Common statuses
+
+| Status | Meaning |
+| --- | --- |
+| `400` or `422` | Invalid request or unsupported format. |
+| `401` | Missing or invalid authentication. |
+| `402` | Insufficient credits. |
+| `403` | Missing key scope or permission. |
+| `404` | Requested resource not found. |
+| `409` | Conflicting request state. |
+| `429` | Rate limit reached. |
+| `500`, `503`, `504` | Server, dependency, or upstream timeout failure. |
+
+Handle `429` and transient `5xx` responses with bounded retries and backoff. Reuse the same `Idempotency-Key` when retrying identical scrape or map inputs. Use a new key for each distinct request. See [retries and idempotency](/guides/retries) for replay and conflict behavior.
+
+## Rate limits
+
+Current organization limits are 120 scrape calls, 30 map calls, and 240 quote calls per minute. The playground uses the same organization limits as machine clients. Account reads allow 300 calls per organization per minute; key creation and revocation share a limit of 10 calls per organization per hour. Key reveal allows 60 calls per user per minute. Limits can change as service capacity changes.
+
+## Error codes
+
+| Code | Status | What to check |
+| --- | --- | --- |
+| `AUTHENTICATION_ERROR` | `401` | Credential validity and revocation |
+| `PERMISSION_DENIED` | `403` | Key scope or organization role |
+| `INSUFFICIENT_CREDITS` | `402` | Available organization balance |
+| `RATE_LIMIT_EXCEEDED` | `429` | Shared request volume and bounded backoff |
+| `IDEMPOTENCY_KEY_ALREADY_ACCEPTED` | `409` | An accepted request whose replay is unavailable |
+| `IDEMPOTENCY_KEY_CONFLICT` | `422` | Reusing an operation key with changed inputs |
+| `UPSTREAM_TIMEOUT` | `504` | Request deadline and source response |
+| `SERVICE_UNAVAILABLE` | `503` | Temporary source or service availability |
+
+Use the code actually returned by the API. A scrape can return source metadata for a fetched page; that source status is separate from the API response's HTTP status. A billable source `404` can be recorded as an error in usage even when the API returns a page result.
+
+Limits are shared by the relevant organization or user across their keys and sessions. Creating more keys does not multiply the organization allowance. Billing mutations have a limit of 10 calls per organization per minute.
+
+## Contact support
+
+Keep the top-level `request_id`, endpoint, target URL, request time, and organization ID. Include the error code and message, but omit API key secrets and target-site credentials. [Activity](/account/usage#inspect-activity) can show whether credits were charged or released.

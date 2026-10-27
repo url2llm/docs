@@ -24,14 +24,53 @@
           {
             "group": "Get started",
             "pages": [
-              "introduction",
-              "guides/current-scrape"
+              "getting-started/introduction",
+              "getting-started/quickstart",
+              "getting-started/authentication"
+            ]
+          },
+          {
+            "group": "Account",
+            "pages": [
+              "account/dashboard",
+              "account/api-keys",
+              "account/team-access",
+              "account/organizations",
+              "account/billing",
+              "account/usage",
+              "account/security"
+            ]
+          },
+          {
+            "group": "API guides",
+            "pages": [
+              "features/scrape",
+              "features/map",
+              "guides/quote"
+            ]
+          },
+          {
+            "group": "Page outputs",
+            "pages": [
+              "features/formats",
+              "features/markdown-html",
+              "features/screenshots",
+              "features/links-assets",
+              "features/branding"
+            ]
+          },
+          {
+            "group": "Reliability",
+            "pages": [
+              "guides/browser-rendering",
+              "guides/retries",
+              "guides/errors"
             ]
           },
           {
             "group": "Draft guides",
             "pages": [
-              "guides/scrape"
+              "drafts/scrape"
             ]
           }
         ]
@@ -49,6 +88,65 @@
   "api": {
     "playground": {
       "display": "none"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/guides/current-scrape",
+      "destination": "/features/scrape"
+    },
+    {
+      "source": "/introduction",
+      "destination": "/getting-started/introduction"
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/getting-started/quickstart"
+    },
+    {
+      "source": "/authentication",
+      "destination": "/getting-started/authentication"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/account/dashboard"
+    },
+    {
+      "source": "/scrape",
+      "destination": "/features/scrape"
+    },
+    {
+      "source": "/formats",
+      "destination": "/features/formats"
+    },
+    {
+      "source": "/map",
+      "destination": "/features/map"
+    },
+    {
+      "source": "/quote",
+      "destination": "/guides/quote"
+    },
+    {
+      "source": "/errors",
+      "destination": "/guides/errors"
+    },
+    {
+      "source": "/guides/scrape",
+      "destination": "/drafts/scrape"
+    }
+  ],
+  "navbar": {
+    "links": [
+      {
+        "label": "Website",
+        "href": "https://url2llm.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://url2llm.com/dashboard"
     }
   }
 }

@@ -5,7 +5,7 @@
 - Keep internal founder notes in workspace `../founder/`, outside this repository. Never commit them here.
 - Keep parameter definitions in OpenAPI; use MDX for examples and behavior.
 - Clearly label unimplemented contracts. Keep the playground disabled until a compatible service exists.
-- In the draft, keep screenshots limited to `fullPage` and `quality`, caching off by default, and branding extraction excluded.
+- Keep screenshot options to `fullPage`, `format`, `quality`, and `delivery`, caching off by default, and branding extraction excluded from the draft.
 - Keep backend internals and provider-routing details out of public documentation.
 - Run `npm run check` before committing.
 - Preserve the workspace writing and Git rules. Do not push or publish without authorization.

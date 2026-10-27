@@ -24,14 +24,24 @@ uv run --locked python scripts/export_openapi.py --output ../webapp/api/openapi.
 
 The backend keeps no duplicate snapshots. Run `npm run check` here and regenerate the Orval client in the webapp. Update both consumers for coordinated releases; deployment workflows do not transfer schemas between repositories.
 
-Review and commit the snapshot with any affected guides. Mintlify generates endpoint pages from it. General explanations and task guides stay handwritten.
+Review and commit the snapshot with any affected guides. Mintlify generates endpoint pages from it. General explanations and task guides stay handwritten. Mintlify owns the public product and account guides; do not duplicate them in the webapp.
+
+## Guide layout
+
+- `getting-started/`: introduction, quickstart, and authentication.
+- `account/`: dashboard, API keys, team access, organizations, billing, usage, and security.
+- `features/`: scrape, map, format selection, text, screenshots, links, assets, and branding.
+- `guides/`: quote, rendering, retries, and errors.
+- `drafts/`: separately labeled proposed contracts.
+
+Keep each topic in its existing guide and link to it from overviews. Update `docs.json` navigation and preserve old public URLs with redirects when moving a page. Parameter schemas stay in OpenAPI; guides explain examples and behavior.
 
 ## Draft contract
 
-Edit `openapi.json` directly for proposed changes and keep its references internal. Its `formats` object, shared settings, screenshot quality, partial results, profiles, and other proposed capabilities remain unimplemented. Keep the draft labels until the backend supports them. The webapp consumes the implemented contract only.
+Edit `openapi.json` directly for proposed changes and keep its references internal. Boolean formats and basic screenshot controls are implemented. Shared settings, partial results, profiles, and other proposed capabilities remain unimplemented. Keep the draft labels until the backend supports them. The webapp consumes the implemented contract only.
 
 ## Publishing
 
-Connect this Git repository to Mintlify, select its publishing branch, and use `/` as the documentation directory. Mintlify reads `docs.json`. Configure the documentation domain in Mintlify.
+Connect this Git repository to Mintlify, select its publishing branch, and use `/` as the documentation directory. Mintlify reads `docs.json`. The public documentation domain is `https://docs.url2llm.com`. The webapp links directly to it and permanently redirects its former `/docs` routes to the matching Mintlify pages. Keep those redirects when changing guide paths.
 
 Official references: [OpenAPI setup](https://www.mintlify.com/docs/api-playground/openapi-setup) and [configuration](https://www.mintlify.com/docs/organize/settings).

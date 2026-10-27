@@ -1,0 +1,60 @@
+---
+title: Screenshots
+description: Capture viewport or full-page images and choose encoding and delivery.
+---
+
+Screenshots are an output of `POST /v1/scrape` and require browser rendering. Combine them with text or branding when your application needs both the page content and its visual appearance.
+
+```json
+{
+  "url": "https://example.com",
+  "formats": { "markdown": true, "screenshot": true },
+  "screenshotParams": {
+    "fullPage": true,
+    "format": "webp",
+    "quality": 80,
+    "delivery": "base64"
+  }
+}
+```
+
+Read the image from `data.screenshot`. The same scrape returns `data.markdown` and page metadata. Screenshot capture has no extra credit surcharge under the [current rules](/guides/quote).
+
+## Viewport or full page
+
+By default, capture covers the viewport. Set `screenshotParams.fullPage: true` for the full page, or request `screenshot@fullPage` through a format array:
+
+```json
+{
+  "url": "https://example.com",
+  "formats": ["screenshot@fullPage"]
+}
+```
+
+The full-page array format cannot be combined with an explicit `fullPage: false`. `screenshotParams` must accompany an enabled screenshot output. Custom viewport dimensions, element capture, and rectangle cropping are not supported by the current API.
+
+## Encoding and quality
+
+JPEG is the default encoding, with quality 80. WebP also accepts a quality value. For PNG, omit `quality` entirely:
+
+```json
+{
+  "url": "https://example.com",
+  "formats": { "screenshot": true },
+  "screenshotParams": { "format": "png", "delivery": "base64" }
+}
+```
+
+Use JPEG or WebP when controlling payload size matters. PNG is useful when you need lossless encoding. Supported values and numeric ranges are defined in the implemented API reference.
+
+## Inline image or public URL
+
+With default `delivery: "base64"`, the response contains a data URL such as `data:image/webp;base64,...`. Your application can use that value as an image source or decode the bytes for its own storage.
+
+With `delivery: "url"`, the response contains a public image URL. URL delivery waits for the image to be stored. The URL has no signature expiry and remains usable while the image is stored; this is not a permanent retention guarantee.
+
+Anyone with a public image URL can view it. Choose your application's own controlled storage for sensitive material. Inline delivery changes the response representation; it is not a zero-data-retention option.
+
+## Capture timing
+
+Use `waitFor` when a public page needs time after navigation to show its content, and leave enough time in `timeout` for navigation and capture. A mobile profile or location preference may change what the page shows. See [browser rendering](/guides/browser-rendering) for examples and restrictions.

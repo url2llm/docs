@@ -1,0 +1,57 @@
+---
+title: Billing and plans
+description: Manage subscriptions, prepaid credits, and automatic recharge.
+---
+
+Open [Settings > Billing](https://url2llm.com/dashboard/settings/billing) for the active organization. Members can view billing; organization owners and admins can change subscriptions, buy credits, and configure auto-recharge.
+
+## Monthly plans
+
+| Plan | Monthly price (USD) | Included credits |
+| --- | ---: | ---: |
+| Free | $0 | 1,000 |
+| Hobby | $19 | 8,000 |
+| Growth | $49 | 25,000 |
+| Pro | $99 | 120,000 |
+| Scale | $299 | 400,000 |
+
+The current dashboard and [pricing page](https://url2llm.com/#pricing) show available purchase options. Listed prices are before applicable tax. A plan is an organization allowance, shared by all its keys.
+
+Monthly credits are used before purchased credits. Unused monthly credits expire at the end of their period; the next confirmed period grants a new allowance. Purchased credits carry forward and do not expire. The renewal date shown in Billing is the relevant period boundary, which is separate from the calendar-month auto-recharge cap.
+
+## Subscribe or manage a subscription
+
+1. Open **Plans**, choose an available plan, and select **Subscribe**.
+2. Complete the payment checkout.
+3. Return to Billing and check the plan and credit balance after payment confirmation.
+
+If an organization already has a subscription, use **Manage subscription and invoices** for plan changes, payment details, invoices, or cancellation. Complete an existing pending checkout before starting another. A redirect back from checkout alone does not confirm that payment succeeded.
+
+When cancellation is scheduled for the period end, the displayed period remains the reference for the current allowance. Check the subscription status and renewal date rather than assuming a cancellation action immediately removes all credits. A paid renewal must be confirmed before a new paid allowance is added.
+
+## Buy prepaid credits
+
+Choose **Buy credits**, enter a USD amount, review the credit total and applicable tax, and complete checkout. The current purchase range is $5 to $1,000. The price per 1,000 credits depends on the organization's current plan and is shown in the form.
+
+Credits are added after payment is confirmed. **Credit purchases** shows manual and automatic purchases with their status. A failed purchase adds no credits. A purchase awaiting confirmation or review should be resolved before attempting another charge.
+
+If a purchase is refunded, its associated credits are removed. If those credits were already spent, Billing may show a credit debt. New credits cover that balance first. Contact [support](mailto:support@url2llm.com) about a purchase or refund; the dashboard does not promise an automatic refund policy.
+
+## Configure auto-recharge
+
+Auto-recharge buys prepaid credits when the available balance reaches the configured threshold.
+
+1. Choose **Edit auto-recharge** and enable it.
+2. Set a credit threshold, an amount per recharge, and a monthly USD cap.
+3. Keep the threshold below the number of credits one recharge adds, and the cap at least as large as one recharge.
+4. Save the settings. If prompted, choose **Authorize auto-recharge** and authorize a payment method.
+
+Saving an enabled setting does not by itself authorize a payment method. Billing shows whether auto-recharge is available and how much is already committed.
+
+The cap counts automatic charges initiated in each UTC calendar month, including pending payments. It excludes tax, subscriptions, and manual purchases. Failed payments pause auto-recharge. Turning it off prevents new charges; a payment already submitted can still complete.
+
+## Available and reserved credits
+
+Billing separates available credits from credits reserved for work in progress. A request reserves its price before execution, then charges or releases that reservation according to the result. Multiple keys can consume the same balance concurrently.
+
+An insufficient balance returns `402`. A quote checks price without charging, but a later request still needs enough available credits. Read [quote and credits](/guides/quote) for operation prices and [usage and activity](/account/usage) for individual charges.

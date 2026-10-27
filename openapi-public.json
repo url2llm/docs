@@ -970,11 +970,7 @@
             "type": "boolean"
           },
           "reason": {
-            "enum": [
-              "first_touch",
-              "cached_reread",
-              "refetch"
-            ],
+            "const": "fresh_fetch",
             "title": "Reason",
             "type": "string"
           }
@@ -985,6 +981,48 @@
           "reason"
         ],
         "title": "QuoteResult",
+        "type": "object"
+      },
+      "ScrapeFormats": {
+        "additionalProperties": false,
+        "properties": {
+          "assets": {
+            "default": false,
+            "title": "Assets",
+            "type": "boolean"
+          },
+          "branding": {
+            "default": false,
+            "title": "Branding",
+            "type": "boolean"
+          },
+          "html": {
+            "default": false,
+            "title": "Html",
+            "type": "boolean"
+          },
+          "links": {
+            "default": false,
+            "title": "Links",
+            "type": "boolean"
+          },
+          "markdown": {
+            "default": false,
+            "title": "Markdown",
+            "type": "boolean"
+          },
+          "rawHtml": {
+            "default": false,
+            "title": "Rawhtml",
+            "type": "boolean"
+          },
+          "screenshot": {
+            "default": false,
+            "title": "Screenshot",
+            "type": "boolean"
+          }
+        },
+        "title": "ScrapeFormats",
         "type": "object"
       },
       "ScrapeMetadata": {
@@ -1002,7 +1040,7 @@
           },
           "credits_used": {
             "default": 0,
-            "description": "Credits this request charged. Zero on a re-read or an unbilled failure",
+            "description": "Credits this request charged. Zero on an unbilled failure",
             "title": "Credits Used",
             "type": "integer"
           },
@@ -1021,11 +1059,6 @@
             "title": "Final Url",
             "type": "string"
           },
-          "from_cache": {
-            "default": false,
-            "title": "From Cache",
-            "type": "boolean"
-          },
           "language": {
             "anyOf": [
               {
@@ -1037,6 +1070,17 @@
             ],
             "title": "Language"
           },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
           "published_at": {
             "anyOf": [
               {
@@ -1047,6 +1091,28 @@
               }
             ],
             "title": "Published At"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "scrape_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scrape Id"
           },
           "source_url": {
             "title": "Source Url",
@@ -1077,7 +1143,9 @@
           "source_url",
           "final_url",
           "status_code",
-          "from_cache",
+          "request_id",
+          "scrape_id",
+          "page_id",
           "credits_used"
         ],
         "title": "ScrapeMetadata",
@@ -1106,21 +1174,28 @@
             "title": "Excludetags"
           },
           "formats": {
-            "items": {
-              "enum": [
-                "markdown",
-                "html",
-                "rawHtml",
-                "links",
-                "screenshot",
-                "screenshot@fullPage",
-                "assets",
-                "branding"
-              ],
-              "type": "string"
-            },
-            "title": "Formats",
-            "type": "array"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScrapeFormats"
+              },
+              {
+                "items": {
+                  "enum": [
+                    "markdown",
+                    "html",
+                    "rawHtml",
+                    "links",
+                    "screenshot",
+                    "screenshot@fullPage",
+                    "assets",
+                    "branding"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Formats"
           },
           "headers": {
             "anyOf": [
@@ -1184,24 +1259,6 @@
               }
             ]
           },
-          "maxAge": {
-            "default": 0,
-            "minimum": 0.0,
-            "title": "Maxage",
-            "type": "integer"
-          },
-          "minAge": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Minage"
-          },
           "mobile": {
             "default": false,
             "title": "Mobile",
@@ -1217,10 +1274,15 @@
             "title": "Renderjs",
             "type": "boolean"
           },
-          "storeInCache": {
-            "default": false,
-            "title": "Storeincache",
-            "type": "boolean"
+          "screenshotParams": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreenshotParams"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "timeout": {
             "default": 30000,
@@ -1230,6 +1292,8 @@
             "type": "integer"
           },
           "url": {
+            "maxLength": 8192,
+            "minLength": 1,
             "title": "Url",
             "type": "string"
           },
@@ -1345,7 +1409,7 @@
                 "type": "null"
               }
             ],
-            "description": "Permanent public screenshot URL; accessible to anyone with it",
+            "description": "Image data URL for base64 delivery, or a public image URL for URL delivery.",
             "title": "Screenshot"
           },
           "summary": {
@@ -1373,6 +1437,51 @@
           "branding"
         ],
         "title": "ScrapeResult",
+        "type": "object"
+      },
+      "ScreenshotParams": {
+        "additionalProperties": false,
+        "properties": {
+          "delivery": {
+            "default": "base64",
+            "enum": [
+              "base64",
+              "url"
+            ],
+            "title": "Delivery",
+            "type": "string"
+          },
+          "format": {
+            "default": "jpeg",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "fullPage": {
+            "default": false,
+            "title": "Fullpage",
+            "type": "boolean"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "JPEG/WebP quality; defaults to 80.",
+            "title": "Quality"
+          }
+        },
+        "title": "ScreenshotParams",
         "type": "object"
       },
       "TypographyBinding": {
@@ -1449,7 +1558,7 @@
     },
     "securitySchemes": {
       "HTTPBearer": {
-        "description": "API key for public endpoints; Clerk session for dashboard endpoints.",
+        "description": "API key for public endpoints; Clerk session for account endpoints.",
         "scheme": "bearer",
         "type": "http"
       }
@@ -1622,8 +1731,8 @@
         ],
         "summary": "Map Site",
         "tags": [
-          "map",
-          "public"
+          "public",
+          "map"
         ]
       }
     },
@@ -1770,8 +1879,8 @@
         ],
         "summary": "Quote",
         "tags": [
-          "quote",
-          "public"
+          "public",
+          "quote"
         ]
       }
     },
@@ -1936,8 +2045,8 @@
         ],
         "summary": "Scrape",
         "tags": [
-          "scrape",
-          "public"
+          "public",
+          "scrape"
         ]
       }
     }

@@ -1,0 +1,42 @@
+---
+title: Retries and idempotency
+description: Retry scrape and map requests without repeating accepted work or charges.
+---
+
+A lost connection does not tell you whether the server accepted a billable request. Use an `Idempotency-Key` on each distinct scrape or map operation and keep the same key when retrying identical inputs.
+
+```bash
+curl https://api.url2llm.com/v1/scrape \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: ingestion-example-001' \
+  -d '{"url":"https://example.com","formats":["markdown"]}'
+```
+
+Generate the key once for the operation and persist it with your job before sending the request. Creating a new key on every retry permits repeated work and charges.
+
+## Understand replay results
+
+| Result | Meaning | Next step |
+| --- | --- | --- |
+| Successful replay | The saved response is available; no new execution or charge occurs | Consume the returned result |
+| `409`, `IDEMPOTENCY_KEY_ALREADY_ACCEPTED` | The request was accepted, but its saved response is delayed or unavailable | Check activity and retry conservatively with the same key |
+| `422`, `IDEMPOTENCY_KEY_CONFLICT` | The key was reused with different inputs | Restore the original inputs or use a new key for an intentional new operation |
+
+Replay returns the previously captured result. It is not a fresh fetch. Ordinary calls to the same URL with a different key, or no idempotency key, are new operations.
+
+Keep the same organization API key when retrying. Idempotency is scoped to the organization and API key; rotating to another credential is not a guarantee that the request will replay. Do not reuse an operation's idempotency key across different URLs, endpoints, formats, or settings.
+
+## Retry transient failures
+
+Use bounded retries with backoff and jitter for connection failures, `429`, and transient `5xx` responses. Respect retry guidance supplied by the response when present. A `409` replay conflict is evidence of acceptance, not evidence that the original work failed.
+
+An accepted operation that failed can have no replayable result. Do not keep retrying indefinitely or silently create a new key. Review its [activity](/account/usage) outcome, then decide whether a new attempt is warranted as a new operation.
+
+For `400` or `422`, correct the inputs first. For `401` or `403`, check the credential, scope, or source access. For `402`, restore the available credit balance. A stable source block needs a change in access conditions rather than a tighter retry loop.
+
+## Credits and request identity
+
+Accepted work reserves credits before execution. Completion charges or releases the reservation according to the result. A replay does not create a second billable execution. A new request can be billed even when its URL matches a previous request.
+
+Keep the top-level `request_id`, operation key, URL, and request time for diagnosis. Never log the bearer secret. See [errors and limits](/guides/errors) and [quote and credits](/guides/quote) for related behavior.
