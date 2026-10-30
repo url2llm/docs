@@ -1,76 +1,79 @@
 ---
 title: API keys
-description: Create, reveal, rotate, and revoke organization API keys.
+description: Get, use, rotate, and revoke your API keys.
 ---
 
-API keys authenticate [scrape](/features/scrape), [map](/features/map), and [quote](/guides/quote) requests. Each key belongs to one organization. Requests are attributed to that key and spend from the organization's shared credit balance.
+Every product API request needs an API key. Manage keys in [Dashboard > API keys](https://url2llm.com/dashboard/keys). Only organization owners and admins can create, reveal, or revoke them.
 
-Open [Dashboard > API keys](https://url2llm.com/dashboard/keys). Organization owners and admins can create, reveal, and revoke keys. Other members can read key metadata and usage without seeing the secret.
+## Get your first key
 
-## Create a key
+1. [Create an account](https://url2llm.com/sign-up) and open the dashboard.
+2. Your first organization is created automatically with 1,000 monthly Free credits. The dashboard sets up a default key when you have no keys.
+3. Copy the secret from the key dialog and save it in your application's secret manager.
 
-1. Select the organization that will own the key.
-2. Click **Create API key** and enter a name, such as `production-ingestion`.
-3. Leave **Live key** on for a `u2l_live_` key, or turn it off for a `u2l_test_` key.
-4. Create the key, copy its secret, and store it in your application's secret manager.
+If you close the dialog or the secret could not be received, open **API keys** and use the eye or copy button beside an active key. Some older keys cannot be revealed; create a replacement if needed.
 
-Dashboard-created keys receive both supported scopes. A test prefix helps distinguish environments; it does not create a separate balance, free requests, or a billing sandbox. Test and live keys use the same organization credits and limits.
+If setup fails before a key is created, retry setup or choose **Create key**. Members who cannot manage keys should ask an organization owner or admin for access.
 
-## Choose scopes
+## Create another key
 
-| Scope | Allowed product endpoints |
-| --- | --- |
-| `scrape` | `POST /v1/scrape` and `POST /v1/quote` |
-| `map` | `POST /v1/map` |
+1. Open [API keys](https://url2llm.com/dashboard/keys) and choose **Create key**.
+2. Enter a name that identifies the application using it.
+3. Leave **Live key** on for a Live key, or turn it off for a Test key.
+4. Choose **Create key**, then copy and save the secret.
 
-For a narrower key, an organization admin can create it through the session-authenticated account API:
+Use separate keys for separate services so you can revoke one without replacing every application's key.
 
-```http
-POST /v1/keys
-Authorization: Bearer YOUR_ORGANIZATION_SESSION_TOKEN
-Content-Type: application/json
+## Use your key
 
-{
-  "name": "content-reader",
-  "scopes": ["scrape"],
-  "live": true
-}
+Set the key in your server or local shell:
+
+```bash
+export URL2LLM_API_KEY='YOUR_API_KEY'
 ```
 
-The creation response returns the secret in `data.key`. A product API key cannot authenticate key-management requests. See [authentication](/getting-started/authentication) for the distinction between keys and user sessions.
+Send it on every product request:
 
-## Reveal an existing key
+```http
+Authorization: Bearer YOUR_API_KEY
+```
 
-Key lists display a prefix, not the full secret. An organization admin can reveal an active key when it is marked revealable, then copy it. Keys without a recoverable secret must be replaced. Revoked keys cannot be revealed.
+Requests use the key's organization, regardless of the organization selected in your browser. All keys in that organization share its credits and rate limits.
 
-The administrative reveal endpoint is `POST /v1/keys/{key_id}/reveal`, authenticated with an organization-scoped user session. Its response contains `data.key`. Keep revealed secrets out of logs and shared screenshots.
+Keep the secret out of source control, browser code, URLs, and logs. The scrape body's `headers` object is sent to the target site; never put your url2llm key there.
 
-## Inspect usage
+## Check scopes and key mode
 
-The page opens on **Active** keys. Use the status filters to include revoked keys and choose the 7, 30, or 90 day usage period. Each row shows requests, credits used, creation time, and last use. Key names are labels; the prefix is useful for identifying a credential without exposing it.
+| Scope | Operations |
+| --- | --- |
+| `scrape` | Scrape, quote, crawl, batch, domain branding, and collection reads and cancellation |
+| `map` | Map and web search |
 
-Revoked keys remain in historical usage. See [usage and activity](/account/usage) to reconcile key totals with the organization balance.
+Dashboard-created keys include both scopes. A valid key without the required scope receives `403`.
+
+Live keys start with `u2l_live_`; Test keys start with `u2l_test_`. Both use the same credits and limits. Test mode does not make requests free or create a payment sandbox.
 
 ## Rotate a key
 
-1. Create a replacement key with the required scopes.
-2. Update the secret in every service that uses the old key.
-3. Verify a request succeeds with the replacement.
-4. Revoke the old key and confirm its services are using the replacement.
+1. Create a replacement key and update the applications using it.
+2. Verify a request with the replacement.
+3. Finish or cancel collections started with the old key. Resolve uncertain requests with the original key and [idempotency key](/guides/retries).
+4. Revoke the old key.
 
-Scopes are chosen at creation. To change them, create a replacement key. Separate credentials for separate services make rotation and incident response easier.
+If a key is compromised, revoke it immediately. Do not wait to finish routine rotation.
 
 ## Revoke a key
 
-Choose **Revoke** on an active key and confirm. Revocation stops future authentication and reveal while preserving its usage history. It does not delete the organization, return previously spent credits, or sign teammates out. You can revoke the last active key; a new active key is then needed for product calls and the Playground.
+1. Open [API keys](https://url2llm.com/dashboard/keys) and find the key by name or prefix.
+2. Choose **Revoke**, then confirm with **Revoke key**.
+3. Select the **Revoked** filter to see the key and its usage history.
 
-The session-authenticated administrative endpoint is:
+Revocation cannot be undone. New requests using the key receive `401`, and its secret can no longer be revealed. Pending collections started with the key stop. Completed work keeps its charges and history.
 
-```http
-DELETE /v1/keys/KEY_ID
-Authorization: Bearer YOUR_ORGANIZATION_SESSION_TOKEN
-```
+A replacement key cannot replay an operation accepted with the revoked key. For an uncertain earlier request, check [Activity](/account/usage) or contact [support](mailto:support@url2llm.com) before starting a new operation.
 
-Use the key's ID from the list, not its secret or display prefix. Revocation cannot be undone through the current dashboard; create a replacement when access is needed again.
+## Check usage or access errors
 
-Creation and revocation share an organization limit of 10 calls per hour. Reveal is limited to 60 calls per user per minute. See [errors and limits](/guides/errors).
+The API keys page shows requests, credits used, and last use for each key. Use [Activity](/account/usage) to inspect individual requests.
+
+For `401`, check the secret and revocation state. For `403`, check the required scope. For `402`, check the organization's available credits in [Billing](https://url2llm.com/dashboard/settings/billing).

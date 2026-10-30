@@ -12,10 +12,6 @@
     "dark": "/images/wordmark-dark.svg"
   },
   "favicon": "/favicon.ico",
-  "banner": {
-    "content": "The API reference describes the implemented API. Draft pages describe proposed changes.",
-    "dismissible": false
-  },
   "navigation": {
     "tabs": [
       {
@@ -26,19 +22,9 @@
             "pages": [
               "getting-started/introduction",
               "getting-started/quickstart",
-              "getting-started/authentication"
-            ]
-          },
-          {
-            "group": "Account",
-            "pages": [
-              "account/dashboard",
+              "getting-started/authentication",
               "account/api-keys",
-              "account/team-access",
-              "account/organizations",
-              "account/billing",
-              "account/usage",
-              "account/security"
+              "guides/http-clients"
             ]
           },
           {
@@ -46,11 +32,14 @@
             "pages": [
               "features/scrape",
               "features/map",
+              "features/search",
+              "features/collections",
+              "features/brand-api",
               "guides/quote"
             ]
           },
           {
-            "group": "Page outputs",
+            "group": "Outputs",
             "pages": [
               "features/formats",
               "features/markdown-html",
@@ -68,9 +57,10 @@
             ]
           },
           {
-            "group": "Draft guides",
+            "group": "Credits and billing",
             "pages": [
-              "drafts/scrape"
+              "account/billing",
+              "account/usage"
             ]
           }
         ]
@@ -78,10 +68,6 @@
       {
         "tab": "API reference",
         "openapi": "openapi-public.json"
-      },
-      {
-        "tab": "Draft API",
-        "openapi": "openapi.json"
       }
     ]
   },
@@ -91,50 +77,22 @@
     }
   },
   "redirects": [
-    {
-      "source": "/guides/current-scrape",
-      "destination": "/features/scrape"
-    },
-    {
-      "source": "/introduction",
-      "destination": "/getting-started/introduction"
-    },
-    {
-      "source": "/quickstart",
-      "destination": "/getting-started/quickstart"
-    },
-    {
-      "source": "/authentication",
-      "destination": "/getting-started/authentication"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/account/dashboard"
-    },
-    {
-      "source": "/scrape",
-      "destination": "/features/scrape"
-    },
-    {
-      "source": "/formats",
-      "destination": "/features/formats"
-    },
-    {
-      "source": "/map",
-      "destination": "/features/map"
-    },
-    {
-      "source": "/quote",
-      "destination": "/guides/quote"
-    },
-    {
-      "source": "/errors",
-      "destination": "/guides/errors"
-    },
-    {
-      "source": "/guides/scrape",
-      "destination": "/drafts/scrape"
-    }
+    { "source": "/guides/current-scrape", "destination": "/features/scrape" },
+    { "source": "/introduction", "destination": "/getting-started/introduction" },
+    { "source": "/quickstart", "destination": "/getting-started/quickstart" },
+    { "source": "/authentication", "destination": "/getting-started/authentication" },
+    { "source": "/dashboard", "destination": "/account/usage" },
+    { "source": "/scrape", "destination": "/features/scrape" },
+    { "source": "/formats", "destination": "/features/formats" },
+    { "source": "/map", "destination": "/features/map" },
+    { "source": "/quote", "destination": "/guides/quote" },
+    { "source": "/errors", "destination": "/guides/errors" },
+    { "source": "/guides/scrape", "destination": "/features/scrape" },
+    { "source": "/drafts/scrape", "destination": "/features/scrape" },
+    { "source": "/account/dashboard", "destination": "/account/usage" },
+    { "source": "/account/organizations", "destination": "/account/api-keys" },
+    { "source": "/account/team-access", "destination": "/account/api-keys" },
+    { "source": "/account/security", "destination": "/getting-started/authentication" }
   ],
   "navbar": {
     "links": [

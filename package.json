@@ -2,7 +2,7 @@
   "name": "url2llm-docs",
   "version": "0.1.0",
   "private": true,
-  "description": "Mintlify documentation for the proposed url2llm API",
+  "description": "Customer API access documentation for url2llm",
   "scripts": {
     "dev": "mint dev --no-open --port 3002 --telemetry false",
     "check": "mint validate --telemetry false && mint broken-links --telemetry false"

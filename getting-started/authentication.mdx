@@ -1,40 +1,33 @@
 ---
 title: Authentication
-description: Authenticate product requests and understand organization access.
+description: Authenticate API calls with an organization key.
 ---
 
-Send an organization API key in the API request's authorization header:
+Send an organization API key in the request's authorization header:
 
 ```http
 Authorization: Bearer YOUR_API_KEY
 ```
 
-This authenticates `POST /v1/scrape`, `POST /v1/map`, and `POST /v1/quote`. Every key belongs to one organization, and requests spend from that organization's shared credits.
+Use this header for scrape, map, search, quote, crawl, batch, domain branding, and collection reads and cancellation. [Create a key](/account/api-keys) before following the [quickstart](/getting-started/quickstart).
 
-## Key scopes
+## Scopes
 
-A key needs `scrape` for scrape and quote, and `map` for site discovery. A valid key missing the required scope receives `403`. [API keys](/account/api-keys) explains creation, narrower scopes, reveal, rotation, and revocation.
-
-Both `u2l_live_` and `u2l_test_` keys authenticate product requests. The test prefix does not bypass billing or organization limits.
-
-## User sessions
-
-[Dashboard](/account/dashboard) account endpoints require a signed-in user session scoped to the active organization. The user's role controls administrative operations. Organization owners and admins can manage keys and billing; other memberships may have more limited access.
-
-A user session cannot replace a product API key on scrape, map, or quote. An API key cannot authenticate account endpoints or grant dashboard membership. The Playground signs you in first, then uses a revealed organization key for product requests.
-
-## Keep credentials separate
-
-Store API keys in server-side configuration or a secret manager. Keep them out of public repositories, browser bundles, URLs, and logs. Use separate keys for separate services so one can be revoked independently.
-
-Your url2llm authorization belongs in the API request header. The scrape body's `headers` object is sent to the target site; do not put your url2llm key there.
-
-## Diagnose authentication failures
-
-| Response | Check |
+| Scope | Operations |
 | --- | --- |
-| `401` | Missing, malformed, invalid, or revoked credential |
-| `403` on a product endpoint | API key scope, or a user session sent instead of a key |
-| `403` on an account endpoint | User session and the required organization role |
+| `scrape` | Scrape, quote, crawl, batch, domain branding, and their collection reads and cancellation |
+| `map` | Map and web search |
 
-Check the active organization when a dashboard action is unavailable. Product requests use the key's organization regardless of the organization selected in your browser. See [organizations](/account/organizations) and [errors and limits](/guides/errors).
+Dashboard-created keys have both scopes. A key must be valid, active, and not revoked. A missing or invalid key receives `401`; a missing scope receives `403`.
+
+Both Live and Test keys use the organization's shared credits and limits. Signing in to the dashboard does not replace the API key required by product endpoints.
+
+## Keep credentials secure
+
+Store keys in server-side configuration or a secret manager. Keep them out of public repositories, browser bundles, URLs, and logs. Rotate or revoke them through [API keys](/account/api-keys).
+
+Your url2llm key belongs in the API request header. The scrape body's `headers` object is sent to the target site; never put your url2llm key there.
+
+## Troubleshoot access
+
+Check the key's scopes, revocation state, and owning organization. Product requests always use the key's organization, regardless of the workspace selected in your browser. See [errors and limits](/guides/errors) for status codes and retry guidance.

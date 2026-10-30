@@ -1,9 +1,9 @@
 ---
 title: Introduction
-description: Scrape public pages, discover site URLs, and extract page branding.
+description: Search sources, scrape pages, collect websites, and extract sourced branding.
 ---
 
-url2llm turns public URLs into content your application can use. Read a page as Markdown or HTML, capture its appearance, collect links and media, or inspect the visual identity visible on the page.
+url2llm turns public URLs into content for your application. Read a page as Markdown or HTML, capture its appearance, collect links and media, or inspect the visual identity visible on the page.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="bolt" href="/getting-started/quickstart">
@@ -16,13 +16,16 @@ url2llm turns public URLs into content your application can use. Read a page as 
 
 ## Make a request
 
-Get an [organization API key](/account/api-keys) and set `URL2LLM_API_KEY` as described in the quickstart. This request returns the main page content as Markdown:
+The API base URL is `https://api.url2llm.com`. Send JSON with `Content-Type: application/json` and authenticate with `Authorization: Bearer YOUR_API_KEY`.
+
+Get an [API key](/account/api-keys) and set `URL2LLM_API_KEY` and `URL2LLM_OPERATION_KEY` as described in the [quickstart](/getting-started/quickstart). This request returns the main page content as Markdown:
 
 ```bash
 curl https://api.url2llm.com/v1/scrape \
   -H "Authorization: Bearer $URL2LLM_API_KEY" \
   -H 'Content-Type: application/json' \
-  -d '{"url":"https://example.com","formats":{"markdown":true},"onlyMainContent":true}'
+  -H "Idempotency-Key: ${URL2LLM_OPERATION_KEY:?Set URL2LLM_OPERATION_KEY first}" \
+  -d '{"url":"https://example.com","formats": ["markdown"],"onlyMainContent":true}'
 ```
 
 Read `data.markdown` after checking the response's `success` flag. `data.metadata` preserves the source URL, final URL, source status, and credits used. The [quickstart](/getting-started/quickstart) includes cURL, Node.js, and Python examples.
@@ -33,10 +36,13 @@ Read `data.markdown` after checking the response's `success` flag. `data.metadat
 | --- | --- | --- |
 | A public URL | Page content and selected outputs | [Scrape API](/features/scrape) |
 | A starting URL or site | A list of candidate page URLs | [Map API](/features/map) |
+| A query | Web source URLs, titles, and descriptions | [Search API](/features/search) |
+| A URL list or website | Managed page collection with progress and results | [Batch and crawl](/features/collections) |
+| A domain | Sourced brand facts and an optional measured style guide | [Domain branding](/features/brand-api) |
 | A planned scrape request | Its credit cost before execution | [Quote API](/guides/quote) |
 | A public page | Its visible logos, colors, fonts, and component styles | [Branding output](/features/branding) from a scrape |
 
-A scrape reads one page synchronously. Map discovers URLs without scraping each one. Your application selects pages and owns multi-page scheduling, indexing, storage, and refreshes.
+A scrape reads one page synchronously. Map discovers URLs without scraping each one. Use batch for selected URLs or crawl for discovery and page collection. Both return a collection ID with progress, cancellation, and paginated results. Your application decides how to index, store, and refresh the content.
 
 ## Choose a page output
 
@@ -55,29 +61,16 @@ A scrape reads one page synchronously. Map discovers URLs without scraping each 
   </Card>
 </CardGroup>
 
-JavaScript rendering is enabled by default. Multiple supported formats can share one page fetch, and currently add no format or browser credit surcharge. Each ordinary scrape fetches fresh content. Use [browser rendering](/guides/browser-rendering) for mobile, location, headers, and timing options.
+JavaScript rendering is enabled by default. Multiple supported formats can share one page fetch, and currently add no format or browser credit surcharge. Each new scrape fetches fresh content. Use [browser rendering](/guides/browser-rendering) for mobile, location, headers, and timing options.
 
-## Account and operations
+## API access and credits
 
-Signup provisions your first organization automatically. Every key in the organization shares its credit balance; personal sign-in and team roles control dashboard access separately.
+[Create an API key](/account/api-keys) in the dashboard. Signup supplies the Free plan's 1,000 monthly credits. Every key in an organization shares its balance.
 
-<CardGroup cols={2}>
-  <Card title="API keys" icon="key" href="/account/api-keys">
-    Create credentials, choose scopes, reveal secrets, rotate, and revoke keys.
-  </Card>
-  <Card title="Team access" icon="users" href="/account/team-access">
-    Invite teammates, assign roles, and remove organization access.
-  </Card>
-  <Card title="Billing and plans" icon="credit-card" href="/account/billing">
-    Manage monthly allowances, prepaid credits, and auto-recharge.
-  </Card>
-  <Card title="Usage and activity" icon="chart-line" href="/account/usage">
-    Inspect requests, key usage, charges, and released reservations.
-  </Card>
-</CardGroup>
+Read [billing](/account/billing) for monthly allowances, prepaid top-ups, and optional auto-recharge, and [usage](/account/usage) to interpret charges.
 
-## Before production
+## Prepare for production
 
-Read [authentication](/getting-started/authentication), [retries and idempotency](/guides/retries), and [errors and limits](/guides/errors). Check a representative page's output before scaling, keep its source metadata, and use a separate key for each service.
+Read [authentication](/getting-started/authentication), [retries and idempotency](/guides/retries), and [errors and limits](/guides/errors). Check a representative page's output before sending many requests, keep its source metadata, and use a separate key for each service.
 
-The API reference is generated from the implemented [OpenAPI contract](/openapi-public.json). The separate Draft API and [draft scrape guide](/drafts/scrape) describe proposed controls. Use the implemented guides for requests to the current API.
+Use the API reference for endpoint parameters and response schemas. The [OpenAPI specification](/openapi-public.json) is available for tooling and integrations.
