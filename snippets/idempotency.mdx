@@ -1,0 +1,9 @@
+Create an operation key once before a new request:
+
+```bash
+export URL2LLM_OPERATION_KEY="$(uuidgen)"
+```
+
+Save that value with your task. Keep it when rerunning the script for an identical retry; do not rerun the generation command. If `uuidgen` is unavailable, set your own unique value. For a different request, generate a new value.
+
+Node.js and Python require the saved key and use the [shared HTTP client](/guides/http-clients). Read [retries](/guides/retries) before retrying a request whose result you did not receive.

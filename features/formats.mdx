@@ -3,18 +3,18 @@ title: Formats and options
 description: Choose the content and visual outputs returned by a scrape.
 ---
 
-A scrape can produce several outputs from one fetched page. Request an array of format names or an object of enabled formats:
+A scrape can produce several outputs from one fetched page. Request an array of format names:
 
 ```json
 {
   "url": "https://example.com",
-  "formats": { "markdown": true, "links": true, "branding": true }
+  "formats": ["markdown", "links", "branding"]
 }
 ```
 
-If you omit `formats`, the API requests Markdown. In a format object, omitted or false outputs are disabled. Select at least one output. Outputs you did not request are `null` in the response.
+If you omit `formats`, the API requests Markdown. Select at least one output. Outputs you did not request are `null` in the response.
 
-## Available outputs
+## Choose a format
 
 | Format | Response field | Guide |
 | --- | --- | --- |
@@ -27,18 +27,18 @@ If you omit `formats`, the API requests Markdown. In a format object, omitted or
 | `assets` | `data.assets` | [Links and assets](/features/links-assets) |
 | `branding` | `data.branding` | [Branding](/features/branding) |
 
-Use `screenshot@fullPage` through a format array. In a format object, enable `screenshot` and set `screenshotParams.fullPage: true`.
+Use `screenshot@fullPage`, or request `screenshot` and set `screenshotParams.fullPage: true`, for a full-page capture.
 
-## Choose only what you need
+## Combine formats
 
 Start with Markdown for a reading or retrieval workflow. Add links to inspect related pages, HTML when document structure matters, or screenshots when visual state matters. Assets and branding are useful when your application needs page media or visual identity.
 
-Extra outputs have no current credit surcharge, but images and HTML can increase payload size. Screenshots, branding, and assets require JavaScript rendering. See [browser rendering](/guides/browser-rendering) for compatible settings.
+Extra outputs do not currently cost extra credits, but images and HTML can increase payload size. Screenshots, branding, and assets require JavaScript rendering. See [browser rendering](/guides/browser-rendering) for compatible settings.
 
-A successful scrape produces every requested output. The current API does not return a mixture of successful and failed format results. Structured JSON extraction, summaries, and partial-result modes are not available.
+A successful scrape produces every requested output. A scrape either returns all requested outputs or an error. Structured JSON extraction, summaries, and partial-result modes are not available.
 
-## Content and capture settings
+## Adjust content and capture settings
 
-Use [content filtering](/features/markdown-html#focus-on-useful-content) to focus on useful sections. Choose [screenshot encoding and delivery](/features/screenshots) independently of the text outputs. All outputs share the source metadata described in [Scrape API](/features/scrape#response).
+Use [content filtering](/features/markdown-html#filter-the-content) to focus on useful sections. Choose [screenshot encoding and delivery](/features/screenshots) independently of the text outputs. All outputs share the source metadata described in [Scrape API](/features/scrape#response).
 
-Request fields accept camelCase and snake_case. Use the implemented API reference for full request and response schemas; settings shown only in the Draft API are not a guarantee of current support.
+Request fields use camelCase. Use the API reference for supported request fields and response schemas.

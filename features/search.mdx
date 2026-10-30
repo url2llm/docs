@@ -1,0 +1,93 @@
+---
+title: Web search
+description: Find web sources and pass their URLs to scraping tools.
+---
+
+import IdempotencyNote from "/snippets/idempotency.mdx";
+
+Search accepts an API key with `map` scope. Each successful search costs one credit, including a search with no matches. A failed search releases its reserved credit.
+
+## Search the web
+
+<IdempotencyNote />
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.url2llm.com/v1/search \
+  -H "Authorization: Bearer $URL2LLM_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: ${URL2LLM_OPERATION_KEY:?Set URL2LLM_OPERATION_KEY first}" \
+  -d '{"query":"API changelog","limit":10,"includeDomains":["stripe.com"],"freshness":"last_week"}'
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const operationKey = process.env.URL2LLM_OPERATION_KEY
+if (!operationKey) throw new Error('Set URL2LLM_OPERATION_KEY to the saved operation key')
+console.log('Operation key:', operationKey)
+const result = await request('/v1/search', {
+  method: 'POST',
+  operationKey,
+  body: {
+    "query": "API changelog",
+    "limit": 10,
+    "includeDomains": [
+      "stripe.com"
+    ],
+    "freshness": "last_week"
+  },
+})
+console.log(result.data.results)
+```
+
+```python Python
+import os
+from url2llm import request
+
+operation_key = os.environ['URL2LLM_OPERATION_KEY']
+if not operation_key:
+    raise ValueError('Set URL2LLM_OPERATION_KEY to the saved operation key')
+print('Operation key:', operation_key)
+result = request(
+    '/v1/search',
+    method='POST',
+    operation_key=operation_key,
+    body={
+        'query': 'API changelog',
+        'limit': 10,
+        'includeDomains': ['stripe.com'],
+        'freshness': 'last_week',
+    },
+)
+print(result['data']['results'])
+```
+
+</CodeGroup>
+
+The response contains `data.results`, with a URL, title and description for each source, plus `data.request_id` for the usage record and `data.credits_used`. The top-level `request_id` identifies the API request. Pass result URLs to [batch scraping](/features/collections) to fetch their page content. The search credit covers discovery only; page scraping is a separate charge and needs a key with `scrape` scope.
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "results": [
+      {"url": "https://docs.stripe.com/changelog", "title": "Changelog", "description": "API changes and updates."}
+    ],
+    "request_id": 123,
+    "credits_used": 1
+  },
+  "request_id": "req_example"
+}
+```
+
+Results are source references, not scraped page content.
+
+## Options
+
+`query` accepts up to 500 characters. `limit` defaults to 10 and accepts 1 to 20; fewer matches may be returned. Use either `includeDomains` or `excludeDomains`, with up to 20 hostnames. Domain filters include subdomains and never accept URLs or ports. `freshness` accepts `last_24_hours`, `last_week`, `last_month`, or `last_year`. Omit it for any time.
+
+An identical idempotency key replays the stored response without another charge. Reusing the key with a different request is rejected. If search is temporarily unavailable, the API returns `503` without charging.

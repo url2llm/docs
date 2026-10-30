@@ -3,16 +3,78 @@ title: "Map API"
 description: "Discover page URLs with POST /v1/map."
 ---
 
+import IdempotencyNote from "/snippets/idempotency.mdx";
+
 `POST /v1/map` discovers URLs from a site's sitemaps and page links, and can include previously discovered URLs. It does not scrape every discovered page. The endpoint requires a key with the `map` scope.
 
-```bash
+## Map a website
+
+<IdempotencyNote />
+
+<CodeGroup>
+
+```bash cURL
 curl https://api.url2llm.com/v1/map \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H "Authorization: Bearer $URL2LLM_API_KEY" \
   -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: ${URL2LLM_OPERATION_KEY:?Set URL2LLM_OPERATION_KEY first}" \
   -d '{"url":"https://example.com","limit":100}'
 ```
 
-## Choose a discovery scope
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const operationKey = process.env.URL2LLM_OPERATION_KEY
+if (!operationKey) throw new Error('Set URL2LLM_OPERATION_KEY to the saved operation key')
+console.log('Operation key:', operationKey)
+const result = await request('/v1/map', {
+  method: 'POST',
+  operationKey,
+  body: {
+    "url": "https://example.com",
+    "limit": 100
+  },
+})
+console.log(result.data.links)
+```
+
+```python Python
+import os
+from url2llm import request
+
+operation_key = os.environ['URL2LLM_OPERATION_KEY']
+if not operation_key:
+    raise ValueError('Set URL2LLM_OPERATION_KEY to the saved operation key')
+print('Operation key:', operation_key)
+result = request(
+    '/v1/map',
+    method='POST',
+    operation_key=operation_key,
+    body={'url': 'https://example.com', 'limit': 100},
+)
+print(result['data']['links'])
+```
+
+</CodeGroup>
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "links": [
+      {"url": "https://example.com/about", "source": "sitemap", "title": null}
+    ],
+    "warning": null
+  },
+  "request_id": "req_example"
+}
+```
+
+Read URLs from `data.links`. A warning means discovery may be incomplete. Pass selected URLs to [batch scraping](/features/collections) to fetch their content.
+
+## Choose which URLs to include
 
 Start at the path you want to explore. Path filtering is enabled by default, so a request for `https://example.com/docs` keeps that path and its descendants. Include subdomains only when your application needs them.
 
@@ -28,23 +90,21 @@ Start at the path you want to explore. Path filtering is enabled by default, so 
 }
 ```
 
-Use `sitemap: "only"` for sitemap discovery without page rendering, or `sitemap: "skip"` for page links without sitemaps. `ignoreSitemap: true` is a compatibility alias for skipping sitemaps. Request fields accept camelCase and snake_case. See the API reference for the complete request schema and limits.
+Use `sitemap: "only"` for sitemap discovery without page rendering, or `sitemap: "skip"` for page links without sitemaps. Request fields use camelCase. See the API reference for the complete request schema and limits.
 
-## Filter a page list
+## Filter URLs
 
-`search` keeps discovered URLs containing the supplied substring. It does not run a web search. For example, use `search: "product"` to narrow candidates for a product ingestion job. Query-parameter deduplication merges URL variants when enabled. Set `filterByPath: false` when you want to discover URLs beyond the starting path.
+`search` keeps discovered URLs containing the supplied substring. It does not run a web search. For example, use `search: "product"` to narrow candidates for a product import. Query-parameter deduplication merges URL variants when enabled. Set `filterByPath: false` when you want to discover URLs beyond the starting path.
 
-Do not combine `ignoreSitemap: true` with `sitemap: "only"`; those settings ask for incompatible discovery behavior.
-
-## Results and limits
+## Handle incomplete results
 
 The response contains `data.links`, an array of objects with `url`, optional `source`, and optional `title`. `source` identifies where the URL was found, such as a sitemap, page link, or known URL marked `index`. Known URLs can describe pages that have changed or disappeared; verify them when you scrape.
 
-Page discovery follows redirects and uses browser fallback when needed. Sitemap discovery reads robots declarations, nested XML indexes, and compressed sitemap files. Each sitemap fetch has a five-second attempt budget within the overall timeout.
+Discovery follows redirects and uses the requested sitemap mode. The overall `timeout` bounds the request.
 
-Search filters discovered URLs; it does not query a search engine. A timeout, failed source, traversal cap, or response-size cap produces `data.warning` when usable results remain. An empty timeout returns HTTP 504; an unavailable source that prevents discovery returns HTTP 503. Both refund the credit reservation.
+Search filters discovered URLs; it does not query a search engine. A timeout, failed source, discovery limit, or response-size cap produces `data.warning` when usable results remain. A timeout with no results returns HTTP 504; an unavailable source that prevents discovery returns HTTP 503. Both release the reserved credit.
 
-Discovery follows at most 128 child sitemap requests and scans at most 250000 sitemap locations per call. URL strings in the result have an 8 MiB total budget, and titles have a 512-character limit.
+Very large sites may return incomplete results with a warning. URL strings in the response have an 8 MiB total limit, and titles have a 512-character limit.
 
 Map is synchronous and billed per call, regardless of the number of URLs returned. Read [quote and credits](/guides/quote) for the current price, then use [Scrape API](/features/scrape) on selected URLs.
 
@@ -52,6 +112,6 @@ Map is synchronous and billed per call, regardless of the number of URLs returne
 
 Use an `Idempotency-Key` for each distinct map request and keep it when retrying identical inputs. A retry replays the saved response when available; otherwise it returns `409` without running discovery again. See [retries and idempotency](/guides/retries).
 
-## Fetch selected pages
+## Scrape the returned URLs
 
-A map result is a candidate list. Apply your host, path, and content rules before sending one scrape per selected URL. Your application controls concurrency, retries, indexing, and refreshes. Mapping a site does not launch a managed crawl job or scrape every discovered page.
+A map result is a candidate list. Apply your host, path, and content rules, then use [batch scraping](/features/collections) for the selected URLs or scrape pages individually. A separate crawl can discover and collect pages with progress and cancellation. Your application decides how to store and refresh the content. Mapping a site does not start a crawl or scrape every discovered page.

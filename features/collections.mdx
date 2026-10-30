@@ -1,0 +1,394 @@
+---
+title: Crawl and batch scraping
+description: Collect pages with progress, cancellation, and paginated results.
+---
+
+import IdempotencyNote from "/snippets/idempotency.mdx";
+
+Crawl and batch require an API key with `scrape` scope. Creation returns HTTP 202 with a collection ID in `data.id`. Collections continue after the client disconnects.
+
+## Crawl a website
+
+<IdempotencyNote />
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.url2llm.com/v1/crawl \
+  -H "Authorization: Bearer $URL2LLM_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: ${URL2LLM_OPERATION_KEY:?Set URL2LLM_OPERATION_KEY first}" \
+  -d '{"url":"https://example.com","limit":20,"maxDepth":3,"scrapeOptions":{"formats":["markdown"]}}'
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const operationKey = process.env.URL2LLM_OPERATION_KEY
+if (!operationKey) throw new Error('Set URL2LLM_OPERATION_KEY to the saved operation key')
+console.log('Operation key:', operationKey)
+const result = await request('/v1/crawl', {
+  method: 'POST',
+  operationKey,
+  body: {
+    "url": "https://example.com",
+    "limit": 20,
+    "maxDepth": 3,
+    "scrapeOptions": {
+      "formats": [
+        "markdown"
+      ]
+    }
+  },
+})
+console.log(result.data.id)
+```
+
+```python Python
+import os
+from url2llm import request
+
+operation_key = os.environ['URL2LLM_OPERATION_KEY']
+if not operation_key:
+    raise ValueError('Set URL2LLM_OPERATION_KEY to the saved operation key')
+print('Operation key:', operation_key)
+result = request(
+    '/v1/crawl',
+    method='POST',
+    operation_key=operation_key,
+    body={
+        'url': 'https://example.com',
+        'limit': 20,
+        'maxDepth': 3,
+        'scrapeOptions': {'formats': ['markdown']},
+    },
+)
+print(result['data']['id'])
+```
+
+</CodeGroup>
+
+Crawl follows site links and sitemap URLs, with a maximum of 100 pages and depth 10. The start page is depth zero and attempted first. Sitemap candidates and links from the start page are depth one. Robots rules apply to the start page and redirected destinations. The start URL may redirect to its final site URL, which becomes the starting point for link and sitemap discovery. Subsequent page redirects must stay within the configured crawl scope.
+
+- `includePaths` and `excludePaths` match URL pathnames using regex, such as `^/docs/`. Exclusions win. Each list accepts 20 patterns of up to 512 characters. Look-around and backreferences are rejected.
+- `includeSubdomains` is off by default, matching the map API's naming.
+- `crawlEntireDomain` defaults to false, keeping discovered pages within the starting path. Enable it to follow sibling and parent paths.
+- `ignoreQueryParameters` defaults to false. Enable it to visit one variant per path while preserving the first discovered URL's query.
+- `sitemap` accepts `include`, `skip`, or `only`. `only` attempts the start URL and sitemap candidates without following page links.
+
+`scrapeOptions` reuses the page-scrape schema for formats, content filtering, rendering and waits. Page options are not duplicated at the crawl root.
+
+## Scrape a URL list
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.url2llm.com/v1/batch/scrape \
+  -H "Authorization: Bearer $URL2LLM_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: ${URL2LLM_OPERATION_KEY:?Set URL2LLM_OPERATION_KEY first}" \
+  -d '{"urls":["https://example.com/","https://example.com/about"],"scrapeOptions":{"formats":["markdown","links"]}}'
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const operationKey = process.env.URL2LLM_OPERATION_KEY
+if (!operationKey) throw new Error('Set URL2LLM_OPERATION_KEY to the saved operation key')
+console.log('Operation key:', operationKey)
+const result = await request('/v1/batch/scrape', {
+  method: 'POST',
+  operationKey,
+  body: {
+    "urls": [
+      "https://example.com/",
+      "https://example.com/about"
+    ],
+    "scrapeOptions": {
+      "formats": [
+        "markdown",
+        "links"
+      ]
+    }
+  },
+})
+console.log(result.data.id)
+```
+
+```python Python
+import os
+from url2llm import request
+
+operation_key = os.environ['URL2LLM_OPERATION_KEY']
+if not operation_key:
+    raise ValueError('Set URL2LLM_OPERATION_KEY to the saved operation key')
+print('Operation key:', operation_key)
+result = request(
+    '/v1/batch/scrape',
+    method='POST',
+    operation_key=operation_key,
+    body={
+        'urls': ['https://example.com/', 'https://example.com/about'],
+        'scrapeOptions': {'formats': ['markdown', 'links']},
+    },
+)
+print(result['data']['id'])
+```
+
+</CodeGroup>
+
+A batch accepts up to 100 URLs and deduplicates identical entries. `scrapeOptions` uses the supported page-scrape options. Crawl and batch requests do not accept custom request headers.
+
+## Save the collection ID
+
+Creation returns HTTP `202`. This response excerpt shows a queued two-page batch:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "COLLECTION_ID",
+    "kind": "batch",
+    "status": "queued",
+    "total": 2,
+    "completed": 0,
+    "failed": 0,
+    "pending": 2,
+    "credits_used": 0,
+    "reserved_credits": 2,
+    "created_at": "2026-10-29T00:00:00Z",
+    "updated_at": "2026-10-29T00:00:00Z",
+    "warning": null
+  },
+  "request_id": "req_example"
+}
+```
+
+Keep `data.id`. All status, results, and cancellation calls use that ID and a key with `scrape` scope from the same organization.
+
+## Check progress
+
+Save the returned `data.id` before closing your application. Set it in the shell where you run these examples:
+
+```bash
+export COLLECTION_ID='YOUR_COLLECTION_ID'
+```
+
+The examples below check batch status at most 60 times, waiting two seconds between checks. They use the existing ID and never create another collection. Node.js and Python use the [shared HTTP client](/guides/http-clients).
+
+<CodeGroup>
+
+```bash cURL
+: "${COLLECTION_ID:?Set COLLECTION_ID to the returned ID}"
+status='queued'
+for ((attempt = 0; attempt < 60; attempt++)); do
+  progress=$(curl --fail-with-body --silent --show-error \
+    "https://api.url2llm.com/v1/batch/scrape/$COLLECTION_ID" \
+    -H "Authorization: Bearer $URL2LLM_API_KEY") || break
+  status=$(printf '%s' "$progress" | jq -er '.data.status') || break
+  case "$status" in
+    completed|failed|cancelled) break ;;
+  esac
+  sleep 2
+done
+
+printf 'Collection: %s, status: %s\n' "$COLLECTION_ID" "${status:-unknown}"
+case "$status" in
+  completed|failed|cancelled) ;;
+  *)
+    printf 'Polling stopped. Resume with collection ID %s.\n' "$COLLECTION_ID"
+    exit 1
+    ;;
+esac
+```
+
+```javascript Node.js
+import { setTimeout as sleep } from 'node:timers/promises'
+import { request } from './url2llm.mjs'
+
+const collectionId = process.env.COLLECTION_ID
+if (!collectionId) throw new Error('Set COLLECTION_ID to the returned ID')
+console.log('Collection ID:', collectionId)
+const terminal = new Set(['completed', 'failed', 'cancelled'])
+let status
+
+for (let attempt = 0; attempt < 60; attempt++) {
+  const result = await request(`/v1/batch/scrape/${collectionId}`)
+  status = result.data.status
+  if (terminal.has(status)) break
+  await sleep(2000)
+}
+console.log('Status:', status)
+if (!terminal.has(status)) throw new Error('Polling stopped. Resume with the same collection ID')
+```
+
+```python Python
+import os
+import time
+from url2llm import request
+
+collection_id = os.environ['COLLECTION_ID']
+if not collection_id:
+    raise ValueError('Set COLLECTION_ID to the returned ID')
+print('Collection ID:', collection_id)
+
+for attempt in range(60):
+    result = request(f'/v1/batch/scrape/{collection_id}')
+    status = result['data']['status']
+    if status in ('completed', 'failed', 'cancelled'):
+        print('Status:', status)
+        break
+    time.sleep(2)
+else:
+    raise TimeoutError('Polling stopped. Resume with the same collection ID')
+```
+
+</CodeGroup>
+
+The cURL loop requires Bash and `jq`. If a status request fails or the loop ends while work is still `queued` or `running`, keep the ID and resume polling later. Stopping polling does not cancel work. Do not fetch final results until you have checked the status.
+
+For a crawl, replace `/v1/batch/scrape` with `/v1/crawl`. For domain branding, poll `/v1/brand/$COLLECTION_ID/status`.
+
+| Status | Meaning |
+| --- | --- |
+| `queued` | Waiting to start |
+| `running` | Work is in progress |
+| `completed` | Work finished; some pages may still have failed |
+| `failed` | The collection could not finish successfully |
+| `cancelled` | The collection was stopped |
+
+Check `failed`, `warning`, and each page's result before using the content.
+
+## Read all results
+
+A response excerpt for `GET /v1/batch/scrape/$COLLECTION_ID/results?cursor=0&limit=1`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "index": 0,
+        "url": "https://example.com/",
+        "status": "completed",
+        "error": null,
+        "result": {
+          "metadata": {"source_url": "https://example.com/", "final_url": "https://example.com/", "status_code": 200, "credits_used": 1},
+          "markdown": "# Example Domain"
+        }
+      }
+    ],
+    "next_cursor": 1
+  },
+  "request_id": "req_example"
+}
+```
+
+Pass `data.next_cursor` as the next `cursor` until it is `null`. Result cursors are integer offsets; `limit` defaults to 10 and accepts up to 20. Results remain accessible after cancellation.
+
+These examples read every batch results page using `pages` from the [shared HTTP client](/guides/http-clients):
+
+<CodeGroup>
+
+```javascript Node.js
+import { pages } from './url2llm.mjs'
+
+const collectionId = process.env.COLLECTION_ID
+if (!collectionId) throw new Error('Set COLLECTION_ID to the returned ID')
+for await (const page of pages(`/v1/batch/scrape/${collectionId}/results`)) {
+  console.log('Next cursor:', page.next_cursor)
+  for (const item of page.items) {
+    console.log(item.url, item.status, item.result?.markdown ?? item.error)
+  }
+}
+```
+
+```python Python
+import os
+from url2llm import pages
+
+collection_id = os.environ['COLLECTION_ID']
+if not collection_id:
+    raise ValueError('Set COLLECTION_ID to the returned ID')
+for page in pages(f'/v1/batch/scrape/{collection_id}/results'):
+    print('Next cursor:', page['next_cursor'])
+    for item in page['items']:
+        content = (item.get('result') or {}).get('markdown') or item.get('error')
+        print(item['url'], item['status'], content)
+```
+
+</CodeGroup>
+
+Use `/v1/crawl/$COLLECTION_ID/results` for crawl results. If a page request fails, retry the read using that collection ID and the last saved cursor. Do not create another collection.
+
+## List previous collections
+
+`GET /v1/batch/scrape` and `GET /v1/crawl` list collections for the key's organization. Their `data` contains `collections` and an opaque `next_cursor`; pass that cursor to list older entries. List `limit` defaults to 20 and accepts up to 100. List cursors and result cursors are different types.
+
+<CodeGroup>
+
+```javascript Node.js
+import { pages } from './url2llm.mjs'
+
+for await (const page of pages('/v1/batch/scrape', 20)) {
+  console.log('Next cursor:', page.next_cursor)
+  for (const collection of page.collections) {
+    console.log(collection.id, collection.status)
+  }
+}
+```
+
+```python Python
+from url2llm import pages
+
+for page in pages('/v1/batch/scrape', limit=20):
+    print('Next cursor:', page['next_cursor'])
+    for collection in page['collections']:
+        print(collection['id'], collection['status'])
+```
+
+</CodeGroup>
+
+Use `/v1/crawl` for crawl history. To resume pagination, pass the last saved cursor as the third argument to `pages`. The first results cursor is `0`; the first history request omits the cursor.
+
+## Cancel a collection
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE "https://api.url2llm.com/v1/batch/scrape/$COLLECTION_ID" \
+  -H "Authorization: Bearer $URL2LLM_API_KEY"
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const collectionId = process.env.COLLECTION_ID
+if (!collectionId) throw new Error('Set COLLECTION_ID to the returned ID')
+const result = await request(`/v1/batch/scrape/${collectionId}`, { method: 'DELETE' })
+console.log(result.data)
+```
+
+```python Python
+import os
+from url2llm import request
+
+collection_id = os.environ['COLLECTION_ID']
+if not collection_id:
+    raise ValueError('Set COLLECTION_ID to the returned ID')
+result = request(f'/v1/batch/scrape/{collection_id}', method='DELETE')
+print(result['data'])
+```
+
+</CodeGroup>
+
+For a crawl, send `DELETE /v1/crawl/$COLLECTION_ID`.
+
+Cancellation stops pending work and releases unused reserved credits. A page already being fetched may take a short time to stop. Revoking the key that started the collection also stops pending work.
+
+## Credits and limits
+
+The page limit is reserved upfront at the normal page price. Pages that are charged use one credit each. Unused, failed, and cancelled pages release their reserved credits. Previously completed pages retain their charges after cancellation. Unfinished collections expire 24 hours after creation and release unused reserved credits. Time spent waiting to start counts toward this window. The window does not determine how long results are stored. At most ten collections may be active per organization.
+
+Use `Idempotency-Key` on creation to safely retry identical inputs without creating a second collection. Poll the returned ID after a replay. See [retries](/guides/retries) before retrying an uncertain result. Collection creation shares the organization limit of 30 calls per minute with map, search, and brand.

@@ -1,5 +1,5 @@
 ---
-title: Branding
+title: Page branding
 description: Extract the visual identity visible on a rendered public page.
 ---
 
@@ -8,14 +8,14 @@ Request `branding` from a scrape to read the visual identity expressed by that p
 ```json
 {
   "url": "https://example.com",
-  "formats": { "branding": true, "screenshot": true },
+  "formats": ["branding", "screenshot"],
   "renderJs": true
 }
 ```
 
 Read the kit from `data.branding` and compare it with `data.screenshot` when checking the visual result.
 
-## What the kit contains
+## Read the result
 
 | Section | What it describes |
 | --- | --- |
@@ -26,18 +26,18 @@ Read the kit from `data.branding` and compare it with `data.screenshot` when che
 | `components` | Styles of the primary button, secondary button, and input |
 | `logo` | Primary logo and favicon URLs when available |
 
-The implemented API reference defines the nested response fields. These sections report signals found on the rendered page. A role with no reliable signal stays `null`; a missing value does not mean the brand has no such color, font, or component.
+The API reference defines the nested response fields. These sections describe what was found on the page. A value is `null` when it could not be identified reliably.
 
 ## Pick a representative page
 
 Start with the homepage or a public product page that shows the site's usual headings, buttons, inputs, and logo. A sparse error page or login screen may show a different visual identity.
 
-Branding describes one captured page. It is not a merged domain-wide brand profile, company database record, or generated brand guideline document. To compare several pages, scrape them individually and decide how your application reconciles their kits.
+Branding describes one captured page. It is not a merged domain-wide brand profile, company database record, or generated brand guideline document. Use the [domain brand API](/features/brand-api) to collect and merge sourced observations across a website, with an optional measured style guide.
 
-## Keep source context
+## Store source details
 
 Store the source URL, final URL, and your own capture timestamp beside the kit. If mobile, country, language, or source changes matter to your workflow, keep those request settings too. The same site can use different component or font styles across pages.
 
 Logo URLs point to discovered assets. Your application decides whether to fetch and store those assets. An unavailable logo can be `null`; do not substitute unrelated page images automatically.
 
-Use the [Brand Playground](https://url2llm.com/dashboard/playground/brand) as an organization admin to inspect a kit before integrating it. See [browser settings](/guides/browser-rendering) for capture options and [links and assets](/features/links-assets) for other page media.
+See [browser settings](/guides/browser-rendering) for capture options and [links and assets](/features/links-assets) for other page media.

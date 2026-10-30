@@ -5,7 +5,7 @@ description: Control JavaScript, mobile profiles, location, and capture timing.
 
 JavaScript rendering is enabled by default for a scrape. Use it when a public page fills its content after navigation or when requesting screenshots, branding, or assets.
 
-## Choose rendering behavior
+## Turn JavaScript on or off
 
 For a page whose useful content is already in HTML, a text-only request can disable JavaScript:
 
@@ -19,7 +19,7 @@ For a page whose useful content is already in HTML, a text-only request can disa
 
 `renderJs: false` cannot be combined with screenshots, branding, assets, or a nonzero `waitFor`. A browser does not guarantee access to a source that blocks the request, and changing an output format does not resolve a stable source block.
 
-## Mobile and location preferences
+## Choose mobile, country, and language settings
 
 ```json
 {
@@ -31,9 +31,9 @@ For a page whose useful content is already in HTML, a text-only request can disa
 }
 ```
 
-`mobile` requests a mobile browser profile. `location` expresses country and language preferences when supported by the available fetch capability. It is not a guarantee that every source will serve a particular region or translate its content.
+`mobile` requests a mobile browser profile. `location` requests a country and language preference. A site may ignore these preferences or return untranslated content.
 
-Ad blocking is enabled by default. Set `blockAds: false` when the ad requests are relevant to the page state you want to capture. Mobile profiles are separate from custom viewport dimensions, which are not exposed by the current request contract.
+Ad blocking is enabled by default. Set `blockAds: false` when the ad requests are relevant to the page state you want to capture. Mobile profiles are separate from custom viewport dimensions, which are not exposed by the API.
 
 ## Wait after navigation
 
@@ -48,11 +48,11 @@ Ad blocking is enabled by default. Set `blockAds: false` when the ad requests ar
 }
 ```
 
-The current validator requires `timeout` to be greater than `waitFor + 3000`. A larger wait does not guarantee that the page has completed every background request. Test a known heading, image, or other pass condition on your source.
+Requests require `timeout` to be greater than `waitFor + 3000`. A larger wait does not guarantee that the page has completed every background request. Test a known heading, image, or other value to check on your source.
 
-`timeout` is the request's overall budget, not an unlimited allowance per internal attempt. Use a bounded retry policy for a transient timeout. See [retries](/guides/retries).
+`timeout` bounds the complete request. Use a bounded retry policy for a transient timeout. See [retries](/guides/retries).
 
-## Target-site headers
+## Send headers to the target site
 
 ```json
 {
@@ -64,4 +64,4 @@ The current validator requires `timeout` to be greater than `waitFor + 3000`. A 
 
 The request body's `headers` are sent to the target site. Your url2llm bearer key belongs in the API request's `Authorization` header, never in this object. Only send target credentials to a source you trust.
 
-The current API does not expose click, scroll, selector-wait, named browser profile, or persistent cookie-session workflows. Those proposed controls remain separate from the implemented scrape contract.
+The API does not expose click, scroll, selector-wait, named browser profile, or persistent cookie-session workflows.

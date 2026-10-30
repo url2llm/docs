@@ -25,7 +25,7 @@ Request Markdown for reading and retrieval, cleaned HTML for document structure,
 
 When JavaScript rendering is enabled, raw HTML comes from the fetched rendered document. It is not a byte-for-byte HTTP response body, a browser session, or a downloadable archive of every asset.
 
-## Focus on useful content
+## Filter the content
 
 `onlyMainContent` is enabled by default. For page-wide cleaned HTML, set it to `false`. Use inclusion or exclusion selectors to narrow the document used by content outputs:
 
@@ -39,11 +39,11 @@ When JavaScript rendering is enabled, raw HTML comes from the fetched rendered d
 
 Alternatively, use `excludeTags` to remove navigation or repeated page furniture. Do not combine inclusion and exclusion in one request. Raw HTML remains the fetched document, and metadata is extracted from the original page.
 
-If no inclusion selector matches, the current implementation falls back to the full document. Inspect the result rather than treating a selector as a guarantee that only one section was returned.
+If no inclusion selector matches, the API uses the full document. Inspect the result rather than treating a selector as a guarantee that only one section was returned.
 
-## Build a retrieval record
+## Store source details
 
-Keep `metadata.source_url`, `metadata.final_url`, the title when present, and your own fetch timestamp alongside the text. Chunk at useful heading boundaries and refresh on a schedule appropriate to the source.
+Keep `metadata.source_url`, `metadata.final_url`, the title when present, and your own fetch timestamp alongside the text. If you split the text into smaller records, use headings as boundaries. Refresh it when the source changes.
 
 [Map](/features/map) discovers candidate URLs; each scrape reads one selected page. Your application owns selection, chunking, storage, refreshes, and removal of outdated content. Structured JSON extraction and summaries are not currently available.
 

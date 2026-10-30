@@ -8,7 +8,7 @@ Screenshots are an output of `POST /v1/scrape` and require browser rendering. Co
 ```json
 {
   "url": "https://example.com",
-  "formats": { "markdown": true, "screenshot": true },
+  "formats": ["markdown", "screenshot"],
   "screenshotParams": {
     "fullPage": true,
     "format": "webp",
@@ -40,16 +40,52 @@ JPEG is the default encoding, with quality 80. WebP also accepts a quality value
 ```json
 {
   "url": "https://example.com",
-  "formats": { "screenshot": true },
+  "formats": ["screenshot"],
   "screenshotParams": { "format": "png", "delivery": "base64" }
 }
 ```
 
-Use JPEG or WebP when controlling payload size matters. PNG is useful when you need lossless encoding. Supported values and numeric ranges are defined in the implemented API reference.
+Use JPEG or WebP when controlling payload size matters. PNG is useful when you need lossless encoding. Supported values and numeric ranges are defined in the API reference.
 
-## Inline image or public URL
+## Read the image
 
-With default `delivery: "base64"`, the response contains a data URL such as `data:image/webp;base64,...`. Your application can use that value as an image source or decode the bytes for its own storage.
+With default `delivery: "base64"`, `data.screenshot` is an image data URL. For the PNG request above, the response has this shape (image bytes are shortened):
+
+```json
+{
+  "success": true,
+  "data": {
+    "metadata": {
+      "source_url": "https://example.com/",
+      "final_url": "https://example.com/",
+      "status_code": 200,
+      "credits_used": 1
+    },
+    "screenshot": "data:image/png;base64,..."
+  },
+  "request_id": "req_example"
+}
+```
+
+Use the value as an image source or decode its bytes into a file.
+
+For a request with `delivery: "url"`, read the public image URL from the same field:
+
+```json
+{
+  "success": true,
+  "data": {
+    "metadata": {
+      "source_url": "https://example.com/",
+      "final_url": "https://example.com/",
+      "status_code": 200,
+      "credits_used": 1
+    },
+    "screenshot": "https://images.example.com/capture.png"
+  },
+  "request_id": "req_example"
+}
+```
 
 With `delivery: "url"`, the response contains a public image URL. URL delivery waits for the image to be stored. The URL has no signature expiry and remains usable while the image is stored; this is not a permanent retention guarantee.
 

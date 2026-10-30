@@ -1,42 +1,130 @@
 ---
 title: Retries and idempotency
-description: Retry scrape and map requests without repeating accepted work or charges.
+description: Retry a request without repeating accepted work or charges.
 ---
 
-A lost connection does not tell you whether the server accepted a billable request. Use an `Idempotency-Key` on each distinct scrape or map operation and keep the same key when retrying identical inputs.
+A lost connection does not tell you whether the API accepted your request. Use an `Idempotency-Key` for scrape, map, search, and collection creation so an identical retry does not start another operation.
 
-```bash
-curl https://api.url2llm.com/v1/scrape \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -H 'Idempotency-Key: ingestion-example-001' \
-  -d '{"url":"https://example.com","formats":["markdown"]}'
+## Create one operation key
+
+Generate a unique key before the first request and save it with your task. Reuse that key, the same API key, and the same request body for every retry. The header accepts up to 255 characters.
+
+```http
+Idempotency-Key: YOUR_OPERATION_KEY
 ```
 
-Generate the key once for the operation and persist it with your job before sending the request. Creating a new key on every retry permits repeated work and charges.
+A different key, or no key, starts a new operation even when the URL is unchanged. Do not reuse a key for another endpoint, URL, format, or setting.
 
-## Understand replay results
+## Handle a replay
 
-| Result | Meaning | Next step |
+| Response | Meaning | Next step |
 | --- | --- | --- |
-| Successful replay | The saved response is available; no new execution or charge occurs | Consume the returned result |
-| `409`, `IDEMPOTENCY_KEY_ALREADY_ACCEPTED` | The request was accepted, but its saved response is delayed or unavailable | Check activity and retry conservatively with the same key |
-| `422`, `IDEMPOTENCY_KEY_CONFLICT` | The key was reused with different inputs | Restore the original inputs or use a new key for an intentional new operation |
+| Successful response | The saved result is returned without another charge | Read the result |
+| `409`, `IDEMPOTENCY_KEY_ALREADY_ACCEPTED` | The request was accepted, but its result is not available for replay | Check Activity; keep the same key |
+| `422`, `IDEMPOTENCY_KEY_CONFLICT` | The key was reused with different inputs | Restore the original inputs or intentionally start a new operation |
 
-Replay returns the previously captured result. It is not a fresh fetch. Ordinary calls to the same URL with a different key, or no idempotency key, are new operations.
+A scrape, map, or search replay returns the saved result. Collection creation returns the original collection ID. Poll that ID instead of creating another collection.
 
-Keep the same organization API key when retrying. Idempotency is scoped to the organization and API key; rotating to another credential is not a guarantee that the request will replay. Do not reuse an operation's idempotency key across different URLs, endpoints, formats, or settings.
+A saved result can be delayed or unavailable, including after an accepted request fails. Stop on `409`; do not keep retrying or generate a new key automatically. Check [Activity](/account/usage) or contact [support](mailto:support@url2llm.com) before deciding to make a new attempt.
 
-## Retry transient failures
+A replacement API key cannot replay the old key's operation. Resolve uncertain work before routine [key rotation](/account/api-keys#rotate-a-key). Revoke a compromised key immediately.
 
-Use bounded retries with backoff and jitter for connection failures, `429`, and transient `5xx` responses. Respect retry guidance supplied by the response when present. A `409` replay conflict is evidence of acceptance, not evidence that the original work failed.
+Reads and cancellation use the existing collection ID. They do not need an idempotency key.
 
-An accepted operation that failed can have no replayable result. Do not keep retrying indefinitely or silently create a new key. Review its [activity](/account/usage) outcome, then decide whether a new attempt is warranted as a new operation.
+## Retry temporary failures
 
-For `400` or `422`, correct the inputs first. For `401` or `403`, check the credential, scope, or source access. For `402`, restore the available credit balance. A stable source block needs a change in access conditions rather than a tighter retry loop.
+Retry connection errors, `429`, and temporary `500`, `502`, `503`, or `504` responses with a fixed attempt limit, backoff, and jitter. Wait at least as long as `Retry-After` when it is present.
 
-## Credits and request identity
+These examples make at most five attempts. They stop on `409`, other non-retryable responses, or a `Retry-After` delay longer than 30 seconds. Use the [shared HTTP client](/guides/http-clients), then set the saved operation key:
 
-Accepted work reserves credits before execution. Completion charges or releases the reservation according to the result. A replay does not create a second billable execution. A new request can be billed even when its URL matches a previous request.
+```bash
+export URL2LLM_OPERATION_KEY='YOUR_SAVED_OPERATION_KEY'
+```
 
-Keep the top-level `request_id`, operation key, URL, and request time for diagnosis. Never log the bearer secret. See [errors and limits](/guides/errors) and [quote and credits](/guides/quote) for related behavior.
+For a new operation, generate a unique value and save it before running the example. When resuming an uncertain request, use its original value and body.
+
+<CodeGroup>
+
+```javascript Node.js
+import { setTimeout as sleep } from 'node:timers/promises'
+import { ApiError, request } from './url2llm.mjs'
+
+const operationKey = process.env.URL2LLM_OPERATION_KEY
+if (!operationKey) throw new Error('Set URL2LLM_OPERATION_KEY to the saved operation key')
+const body = { url: 'https://example.com', formats: ['markdown'] }
+
+for (let attempt = 0; attempt < 5; attempt++) {
+  try {
+    const result = await request('/v1/scrape', { method: 'POST', body, operationKey })
+    console.log(result.data.markdown)
+    break
+  } catch (error) {
+    const retryable = error instanceof ApiError
+      ? [429, 500, 502, 503, 504].includes(error.status)
+      : error instanceof TypeError || error.name === 'TimeoutError'
+    if (!retryable || attempt === 4) throw error
+
+    const header = error.retryAfter?.trim()
+    let retryAfter = 0
+    if (header) {
+      retryAfter = /^\d+$/.test(header)
+        ? Number(header) * 1000
+        : Date.parse(header) - Date.now()
+      if (!Number.isFinite(retryAfter)) retryAfter = 0
+    }
+    const backoff = Math.random() * Math.min(8000, 500 * 2 ** attempt)
+    const delay = Math.max(backoff, retryAfter)
+    if (delay > 30_000) {
+      throw new Error('Wait until Retry-After has passed, then resume with the same key', { cause: error })
+    }
+    await sleep(delay)
+  }
+}
+```
+
+```python Python
+import os
+import random
+import time
+from email.utils import parsedate_to_datetime
+from urllib.error import URLError
+from url2llm import ApiError, request
+
+operation_key = os.environ['URL2LLM_OPERATION_KEY']
+if not operation_key:
+    raise ValueError('Set URL2LLM_OPERATION_KEY to the saved operation key')
+body = {'url': 'https://example.com', 'formats': ['markdown']}
+
+for attempt in range(5):
+    try:
+        result = request('/v1/scrape', method='POST', body=body, operation_key=operation_key)
+        print(result['data']['markdown'])
+        break
+    except (ApiError, URLError, TimeoutError, ConnectionError) as error:
+        retryable = not isinstance(error, ApiError) or error.status in (429, 500, 502, 503, 504)
+        if not retryable or attempt == 4:
+            raise
+
+        header = (getattr(error, 'retry_after', None) or '').strip()
+        retry_after = 0
+        if header:
+            try:
+                retry_after = int(header) if header.isdigit() else parsedate_to_datetime(header).timestamp() - time.time()
+            except (TypeError, ValueError, OverflowError):
+                retry_after = 0
+        backoff = random.random() * min(8, 0.5 * 2 ** attempt)
+        delay = max(backoff, retry_after)
+        if delay > 30:
+            raise RuntimeError('Wait until Retry-After has passed, then resume with the same key') from error
+        time.sleep(delay)
+```
+
+</CodeGroup>
+
+If the API accepted the first attempt but cannot replay its result, a later attempt can return `409`. That response stops these loops without creating new work.
+
+## Fix other errors
+
+For `400` or `422`, correct the inputs. For `401` or `403`, check the API key, scope, or source access. For `402`, restore the available credits. A source that consistently blocks access needs changed access conditions.
+
+Keep the request ID, operation key, URL, and request time for support. Never log the API key or target-site credentials.

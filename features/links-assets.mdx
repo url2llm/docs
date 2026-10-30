@@ -13,17 +13,64 @@ Request `links` to inspect anchors on one page and `assets` to collect reference
 }
 ```
 
-## Read page links
+## Read the response
+
+This response excerpt shows one link and one image:
+
+```json
+{
+  "success": true,
+  "data": {
+    "metadata": {
+      "source_url": "https://example.com/",
+      "final_url": "https://example.com/",
+      "status_code": 200,
+      "credits_used": 1
+    },
+    "links": [
+      {
+        "url": "https://example.com/",
+        "normalized_url": "https://example.com/",
+        "type": "homepage",
+        "text": "Home",
+        "title": "",
+        "image_url": null,
+        "internal": true
+      }
+    ],
+    "assets": [
+      {
+        "url": "https://example.com/logo.png",
+        "filename": "Example",
+        "title": "Example",
+        "asset_type": "image",
+        "context": "page",
+        "mimetype": "image/png",
+        "metadata": {
+          "width": 120,
+          "height": 32,
+          "alt": "Example",
+          "provider": null,
+          "poster_url": null
+        }
+      }
+    ]
+  },
+  "request_id": "req_example"
+}
+```
+
+## Use page links
 
 `data.links` contains deduplicated navigable HTTP and HTTPS links. Relative links are resolved against the page's final URL and a valid page base URL when present.
 
-Each link includes its URL, normalized URL, classification, text, title, optional image URL, and an `internal` flag. Internal means the link belongs to the same normalized host as the page; it is not a permission or ownership judgment.
+Each link includes its URL, normalized URL, classification, text, title, optional image URL, and an `internal` flag. Internal means the link belongs to the same host, after normalizing its spelling as the page; it is not a permission or ownership judgment.
 
 Email, telephone, JavaScript, data URLs, and bare fragment anchors are not returned as navigable page links. A link list describes anchors found in that page, not a complete site inventory.
 
-Use link text and source metadata when building a crawl queue, then apply your application's host and path rules before scraping another page. The API does not automatically fetch every returned link.
+Use link text and source metadata when choosing pages to scrape next, then apply your application's host and path rules before scraping another page. The API does not automatically fetch every returned link.
 
-## Read page assets
+## Use page assets
 
 `data.assets` contains image and video records. Records identify the asset URL, type, MIME type, title, and available metadata. Metadata can include dimensions, image alt text, video provider, or a poster URL. A missing filename or zero dimension means that information was not available from the capture.
 
@@ -31,8 +78,8 @@ Assets include referenced media and supported video embeds. An embed URL identif
 
 Asset output requires JavaScript rendering in the current API. It does not return image bytes or automatically download and host all media. Your application chooses which returned assets to retrieve and how to store them.
 
-## Filtering and completeness
+## Filter the content
 
-Content inclusion or exclusion can affect the document used to extract links and assets. Use [content filtering](/features/markdown-html#focus-on-useful-content) to narrow the result, and inspect the output on representative pages.
+Content inclusion or exclusion can affect the document used to extract links and assets. Use [content filtering](/features/markdown-html#filter-the-content) to narrow the result, and inspect the output on representative pages.
 
 Media loaded only after an interaction or below the visible area may be absent. The current API does not accept a browser-actions sequence to open tabs or repeatedly scroll a page. A successful response means the requested extraction completed, not that every possible site asset was discovered.

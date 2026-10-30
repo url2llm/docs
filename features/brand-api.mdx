@@ -1,0 +1,246 @@
+---
+title: Domain branding
+description: Collect sourced brand observations across a website.
+---
+
+import IdempotencyNote from "/snippets/idempotency.mdx";
+
+The domain brand API collects a website's observed logos, colors, fonts, descriptions and social links. An optional measured style guide adds typography, spacing and component properties. Every observation names its source pages, and conflicting observations remain visible.
+
+This is separate from the [single-page branding format](/features/branding).
+
+## Get domain branding
+
+<IdempotencyNote />
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.url2llm.com/v1/brand \
+  -H "Authorization: Bearer $URL2LLM_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: ${URL2LLM_OPERATION_KEY:?Set URL2LLM_OPERATION_KEY first}" \
+  -d '{"domain":"example.com","includeStyleGuide":false}'
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const operationKey = process.env.URL2LLM_OPERATION_KEY
+if (!operationKey) throw new Error('Set URL2LLM_OPERATION_KEY to the saved operation key')
+console.log('Operation key:', operationKey)
+const result = await request('/v1/brand', {
+  method: 'POST',
+  operationKey,
+  body: {
+    "domain": "example.com",
+    "includeStyleGuide": false
+  },
+})
+console.log(result.data.id)
+```
+
+```python Python
+import os
+from url2llm import request
+
+operation_key = os.environ['URL2LLM_OPERATION_KEY']
+if not operation_key:
+    raise ValueError('Set URL2LLM_OPERATION_KEY to the saved operation key')
+print('Operation key:', operation_key)
+result = request(
+    '/v1/brand',
+    method='POST',
+    operation_key=operation_key,
+    body={'domain': 'example.com', 'includeStyleGuide': False},
+)
+print(result['data']['id'])
+```
+
+</CodeGroup>
+
+Use a key with `scrape` scope. Supply a hostname or HTTP(S) origin without a path, query or fragment. `timeout` defaults to 120,000 milliseconds and applies from the first execution across retries. Page selection is automatic.
+
+## Save the collection ID
+
+Creation returns HTTP `202`. Save `data.id` from the response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "COLLECTION_ID",
+    "kind": "brand",
+    "status": "queued",
+    "total": 1,
+    "completed": 0,
+    "failed": 0,
+    "pending": 1,
+    "credits_used": 0,
+    "reserved_credits": 10,
+    "created_at": "2026-10-29T00:00:00Z",
+    "updated_at": "2026-10-29T00:00:00Z",
+    "warning": null
+  },
+  "request_id": "req_example"
+}
+```
+
+## Check progress
+
+Set `COLLECTION_ID` to the returned ID. Use this ID for status, results, and cancellation with an active key from the same organization:
+
+<CodeGroup>
+
+```bash cURL
+export COLLECTION_ID='YOUR_COLLECTION_ID'
+curl "https://api.url2llm.com/v1/brand/$COLLECTION_ID/status" \
+  -H "Authorization: Bearer $URL2LLM_API_KEY"
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const collectionId = process.env.COLLECTION_ID
+if (!collectionId) throw new Error('Set COLLECTION_ID to the returned ID')
+const result = await request(`/v1/brand/${collectionId}/status`, { method: 'GET' })
+console.log(result.data)
+```
+
+```python Python
+import os
+from url2llm import request
+
+collection_id = os.environ['COLLECTION_ID']
+if not collection_id:
+    raise ValueError('Set COLLECTION_ID to the returned ID')
+result = request(f'/v1/brand/{collection_id}/status', method='GET')
+print(result['data'])
+```
+
+</CodeGroup>
+
+A status response has the same fields as creation. For example:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "COLLECTION_ID",
+    "kind": "brand",
+    "status": "running",
+    "total": 1,
+    "completed": 0,
+    "failed": 0,
+    "pending": 1,
+    "credits_used": 0,
+    "reserved_credits": 10,
+    "created_at": "2026-10-29T00:00:00Z",
+    "updated_at": "2026-10-29T00:00:00Z",
+    "warning": null
+  },
+  "request_id": "req_example"
+}
+```
+
+Repeat while `data.status` is `queued` or `running`. Terminal statuses are `completed`, `failed`, and `cancelled`. Do not create another extraction to check progress. See the [collection polling example](/features/collections#check-progress) for a bounded polling loop.
+
+## Read the result
+
+After completion, fetch the merged result:
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.url2llm.com/v1/brand/$COLLECTION_ID" \
+  -H "Authorization: Bearer $URL2LLM_API_KEY"
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const collectionId = process.env.COLLECTION_ID
+if (!collectionId) throw new Error('Set COLLECTION_ID to the returned ID')
+const result = await request(`/v1/brand/${collectionId}`, { method: 'GET' })
+console.log(result.data)
+```
+
+```python Python
+import os
+from url2llm import request
+
+collection_id = os.environ['COLLECTION_ID']
+if not collection_id:
+    raise ValueError('Set COLLECTION_ID to the returned ID')
+result = request(f'/v1/brand/{collection_id}', method='GET')
+print(result['data'])
+```
+
+</CodeGroup>
+
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://example.com/",
+    "facts": {
+      "title": [{"value": "Example Domain", "sources": ["https://example.com/"]}]
+    },
+    "style_guide": null,
+    "sources": ["https://example.com/"],
+    "warning": null
+  },
+  "request_id": "req_example"
+}
+```
+
+The response contains `data.facts`, optional `data.style_guide`, `data.sources`, and `data.warning`. Each observation has `value` and `sources`. Individual page content becomes available through `GET /v1/brand/$COLLECTION_ID/results` after the completed extraction is charged. It is withheld while running and after cancellation. Without `includeStyleGuide`, page results expose logos, colors and fonts but omit measured typography, spacing and component values.
+
+## Credits
+
+Branding costs 10 credits. Set `includeStyleGuide` to `true` on the same endpoint to add the measured style guide for 5 more credits, totaling 15. The displayed price covers the complete extraction. If no useful evidence is found, or the extraction is cancelled before completion, the reserved credits are released.
+
+## Check missing facts
+
+Missing facts remain absent. The output does not infer a company's audience, tone, positioning or unsupported company details. The measured style guide reflects captured page styles; it does not reconstruct responsive layouts or all interactive states.
+
+## List previous extractions
+
+`GET /v1/brand` lists extractions for the key's organization. Read captured pages from `GET /v1/brand/$COLLECTION_ID/results`; use its integer `next_cursor` to paginate.
+
+Use the [history pagination examples](/features/collections#list-previous-collections), replacing `/v1/batch/scrape` with `/v1/brand`. For captured pages, use the [results loop](/features/collections#read-all-results) with `/v1/brand/$COLLECTION_ID/results` after successful completion.
+
+## Cancel an extraction
+
+Cancel pending work with the same collection ID:
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE "https://api.url2llm.com/v1/brand/$COLLECTION_ID" \
+  -H "Authorization: Bearer $URL2LLM_API_KEY"
+```
+
+```javascript Node.js
+import { request } from './url2llm.mjs'
+
+const collectionId = process.env.COLLECTION_ID
+if (!collectionId) throw new Error('Set COLLECTION_ID to the returned ID')
+const result = await request(`/v1/brand/${collectionId}`, { method: 'DELETE' })
+console.log(result.data)
+```
+
+```python Python
+import os
+from url2llm import request
+
+collection_id = os.environ['COLLECTION_ID']
+if not collection_id:
+    raise ValueError('Set COLLECTION_ID to the returned ID')
+result = request(f'/v1/brand/{collection_id}', method='DELETE')
+print(result['data'])
+```
+
+</CodeGroup>
+
+Cancellation releases unused reserved credits. A completed extraction keeps its charge. Revoking the key that started the extraction also stops pending work.

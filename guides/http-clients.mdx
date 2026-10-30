@@ -1,0 +1,150 @@
+---
+title: Node.js and Python
+description: Use a small HTTP client with the examples in these guides.
+---
+
+These clients use Node.js 18 or newer and Python 3. They need no extra packages. For a first request without a helper file, use the [quickstart](/getting-started/quickstart).
+
+## Set your API key
+
+Create an [API key](/account/api-keys), then set it in the shell where you run your examples:
+
+```bash
+export URL2LLM_API_KEY='YOUR_API_KEY'
+```
+
+## Save the client
+
+Save the Node.js code as `url2llm.mjs` or the Python code as `url2llm.py`. Keep it in the same folder as the example you want to run.
+
+<CodeGroup>
+
+```javascript Node.js
+const apiKey = process.env.URL2LLM_API_KEY
+if (!apiKey) throw new Error('Set URL2LLM_API_KEY before running this example')
+
+export class ApiError extends Error {
+  constructor(status, result, retryAfter) {
+    const message = typeof result?.error?.message === 'string' ? result.error.message : 'Request failed'
+    super(`${status}: ${message}`)
+    this.status = status
+    this.code = result?.error?.code
+    this.requestId = result?.request_id
+    this.retryAfter = retryAfter
+  }
+}
+
+export async function request(path, { method = 'GET', body, operationKey } = {}) {
+  const response = await fetch(`https://api.url2llm.com${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(operationKey ? { 'Idempotency-Key': operationKey } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(190_000),
+  })
+  let result
+  try {
+    result = await response.json()
+  } catch (error) {
+    if (response.ok) throw error
+    throw new ApiError(response.status, {}, response.headers.get('Retry-After'))
+  }
+  if (!response.ok || !result?.success) {
+    throw new ApiError(response.status, result, response.headers.get('Retry-After'))
+  }
+  return result
+}
+
+export async function* pages(path, limit = 10, cursor) {
+  do {
+    const params = new URLSearchParams({ limit: String(limit) })
+    if (cursor != null) params.set('cursor', String(cursor))
+    const result = await request(`${path}?${params}`)
+    yield result.data
+    cursor = result.data.next_cursor
+  } while (cursor != null)
+}
+```
+
+```python Python
+import json
+import os
+from urllib.error import HTTPError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+API_KEY = os.environ['URL2LLM_API_KEY']
+
+
+class ApiError(RuntimeError):
+    def __init__(self, status, result, retry_after=None):
+        error = result.get('error')
+        if not isinstance(error, dict):
+            error = {}
+        message = error.get('message')
+        if not isinstance(message, str):
+            message = 'Request failed'
+        super().__init__(f'{status}: {message}')
+        self.status = status
+        self.code = error.get('code')
+        self.request_id = result.get('request_id')
+        self.retry_after = retry_after
+
+
+def request(path, method='GET', body=None, operation_key=None):
+    headers = {'Authorization': f'Bearer {API_KEY}'}
+    data = None
+    if body is not None:
+        headers['Content-Type'] = 'application/json'
+        data = json.dumps(body).encode()
+    if operation_key:
+        headers['Idempotency-Key'] = operation_key
+    req = Request(f'https://api.url2llm.com{path}', data=data, headers=headers, method=method)
+    try:
+        response = urlopen(req, timeout=190)
+    except HTTPError as error:
+        response = error
+    with response:
+        try:
+            result = json.load(response)
+        except ValueError:
+            if 200 <= response.status < 300:
+                raise
+            result = {}
+        if not isinstance(result, dict):
+            if 200 <= response.status < 300:
+                raise ValueError('Unexpected API response')
+            result = {}
+        if not 200 <= response.status < 300 or not result.get('success'):
+            raise ApiError(response.status, result, response.headers.get('Retry-After'))
+        return result
+
+
+def pages(path, limit=10, cursor=None):
+    while True:
+        params = {'limit': limit}
+        if cursor is not None:
+            params['cursor'] = cursor
+        result = request(f'{path}?{urlencode(params)}')
+        yield result['data']
+        cursor = result['data']['next_cursor']
+        if cursor is None:
+            return
+```
+
+</CodeGroup>
+
+`request` returns the full JSON response. Read the result from `data`. `ApiError` preserves the HTTP status, error code, request ID, and `Retry-After` header. Non-JSON error responses use a generic message while keeping the HTTP status and retry header. Malformed successful responses and network errors are raised without copying their bodies into error messages.
+
+`pages` follows `next_cursor` until it is `null`. It works with collection history and page results, including an integer cursor of zero. Pass a saved cursor as the third argument to resume a read.
+
+## Run an example
+
+Save a guide's Node.js example as `example.mjs` and run `node example.mjs`. For Python, save it as `example.py` and run `python3 example.py`.
+
+Generate an operation key once for a new request. Keep it with your task and reuse it for identical retries. These clients do not generate keys or retry automatically. See [retries](/guides/retries) for a working retry example.
+
+Keep these clients on your server or in a local script. Never put the secret in browser code. Their HTTP timeout is 190 seconds; a client timeout does not cancel work already accepted by the API.
