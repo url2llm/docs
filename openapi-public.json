@@ -1534,6 +1534,7 @@
           },
           "languages": {
             "items": {
+              "pattern": "^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$",
               "type": "string"
             },
             "title": "Languages",

@@ -90,4 +90,4 @@ Results are source references, not scraped page content.
 
 `query` accepts up to 500 characters. `limit` defaults to 10 and accepts 1 to 20; fewer matches may be returned. Use either `includeDomains` or `excludeDomains`, with up to 20 hostnames. Domain filters include subdomains and never accept URLs or ports. `freshness` accepts `last_24_hours`, `last_week`, `last_month`, or `last_year`. Omit it for any time.
 
-An identical idempotency key replays the stored response without another charge. Reusing the key with a different request is rejected. If search is temporarily unavailable, the API returns `503` without charging.
+An identical idempotency key replays the stored response without another charge. Reusing the key with a different request is rejected. If search is temporarily unavailable, the API returns `503`. A request that exceeds its deadline returns `504`. Failed searches release their reserved credit; replay failures preserve the original charge.

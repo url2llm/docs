@@ -39,7 +39,7 @@ When JavaScript rendering is enabled, raw HTML comes from the fetched rendered d
 
 Alternatively, use `excludeTags` to remove navigation or repeated page furniture. Do not combine inclusion and exclusion in one request. Raw HTML remains the fetched document, and metadata is extracted from the original page.
 
-If no inclusion selector matches, the API uses the full document. Inspect the result rather than treating a selector as a guarantee that only one section was returned.
+If no inclusion selector matches, filtered content is empty. Overlapping matches appear once in document order. Tag filters also restrict returned assets. Raw HTML and page metadata remain unchanged.
 
 ## Store source details
 

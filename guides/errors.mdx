@@ -60,6 +60,8 @@ The Playground shares these limits with API clients. The 300/minute limit includ
 
 Use the code actually returned by the API. A scrape can return source metadata for a fetched page; that source status is separate from the API response's HTTP status. A source `404` can be charged and recorded as an error in usage even when the API returns page content.
 
+If the source website limits requests, Scrape returns `503` and releases the reserved credits. An API `429` means your request exceeded an API limit.
+
 Limits are shared across the organization's API keys. Creating more keys does not multiply the organization allowance.
 
 ## Contact support
